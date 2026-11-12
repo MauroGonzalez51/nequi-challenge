@@ -1,0 +1,6 @@
+{
+    "name": "@nequi-challenge/root",
+    "devDependencies": {
+        "taze": "^21.2.0"
+    }
+}

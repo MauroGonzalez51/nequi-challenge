@@ -1,0 +1,46 @@
+project:
+    name: eslint
+    description: shared eslint configuration
+
+layer: tool
+
+language: typescript
+
+toolchains:
+    default: node
+
+workspace:
+    inheritedTasks:
+        include:
+            - pnpm
+            - lint
+
+fileGroups:
+    sources:
+        - src/**/*
+        - package.json
+        - tsdown.config.ts
+        - tsconfig.json
+
+tasks:
+    pnpm:
+        args:
+            - --filter
+            - "@nequi-challenge/tools-eslint"
+
+    lint:
+        inputs:
+            - "@group(sources)"
+        outputs:
+            - "@group(sources)"
+
+    build:
+        command: pnpm
+        args:
+            - exec
+            - tsdown
+        toolchains: node
+        inputs:
+            - "@group(sources)"
+        outputs:
+            - dist/**
