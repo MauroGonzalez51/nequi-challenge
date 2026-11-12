@@ -5,6 +5,7 @@ project:
 tasks:
     gradlew:
         command: ./gradlew
+        preset: server
         options:
             cache: false
             runFromWorkspaceRoot: false
