@@ -4,7 +4,7 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 
 ## 1. Project foundation
 
-- [ ] 1.1 Decide the persistence store and record it in design.md Open Questions; verified when the question is resolved there
+- [x] 1.1 Decide the persistence store and record it in design.md; verified when the decision is listed there
 - [ ] 1.2 Confirm Gradle modules follow the Bancolombia scaffold (domain, infrastructure, entrypoints); verified with `./gradlew build` passing in `apps/api` and the layer review against `clean-architecture`
 - [ ] 1.3 Confirm Lombok, Java 17 and `jakarta.*` conventions; verified by a search finding no `javax.` imports
 

@@ -11,6 +11,10 @@ spring:
     profiles:
         include: null
 
+    sql:
+        init:
+            mode: always
+
 management:
     endpoints:
         web:

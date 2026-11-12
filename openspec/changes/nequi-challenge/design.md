@@ -30,6 +30,6 @@ The candidate writes all code; Claude is evaluator and mentor. The repo already 
 - [Grep checks miss edge cases such as `if` inside lambdas that are not reactive flows] → Claude explains each finding and the candidate decides.
 - [Candidate leans on Claude for code] → Protocol above; defense explainability requirement.
 
-## Open Questions
+## Resolved Decisions
 
-- Persistence store choice (DynamoDB vs MongoDB Atlas vs RDS vs Redis); decide before the persistence adapter task group.
+- Persistence: PostgreSQL via R2DBC (RDS PostgreSQL in AWS). Schema created by `schema.sql` run at startup with `spring.sql.init.mode=always`; connection data from environment variables (`.env` locally, Secrets Manager in AWS).
