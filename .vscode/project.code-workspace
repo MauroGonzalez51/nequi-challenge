@@ -5,6 +5,10 @@
             "path": "../",
         },
         {
+            "name": "# API",
+            "path": "../apps/api",
+        },
+        {
             "name": "@ Moon Config",
             "path": "../.moon",
         },

@@ -1,0 +1,10 @@
+project:
+    title: API
+    description: Backend using clean architecture
+
+tasks:
+    gradlew:
+        command: ./gradlew
+        options:
+            cache: false
+            runFromWorkspaceRoot: false
