@@ -9,3 +9,4 @@ tasks:
         options:
             cache: false
             runFromWorkspaceRoot: false
+            envFile: .env
