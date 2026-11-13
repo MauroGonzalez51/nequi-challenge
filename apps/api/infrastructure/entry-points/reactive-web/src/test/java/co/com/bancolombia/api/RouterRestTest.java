@@ -1,60 +1,64 @@
 package co.com.bancolombia.api;
 
-import org.assertj.core.api.Assertions;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class})
+import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
+import co.com.bancolombia.api.handlers.FranchiseHandler;
+import co.com.bancolombia.model.franchise.Franchise;
+import co.com.bancolombia.model.franchise.exception.InvalidFranchiseNameException;
+import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import reactor.core.publisher.Mono;
+
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class })
 @WebFluxTest
 class RouterRestTest {
 
     @Autowired
     private WebTestClient webTestClient;
 
-    @Test
-    void testListenGETUseCase() {
-        webTestClient.get()
-                .uri("/api/usecase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+    @MockitoBean
+    private CreateFranchiseUseCase createFranchiseUseCase;
 
     @Test
-    void testListenGETOtherUseCase() {
-        webTestClient.get()
-                .uri("/api/otherusercase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+    void shouldReturnCreatedWhenFranchiseIsValid() {
+        Franchise saved = Franchise.builder().id(1L).name("Nequi").build();
+        when(createFranchiseUseCase.execute(any())).thenReturn(Mono.just(saved));
 
-    @Test
-    void testListenPOSTUseCase() {
         webTestClient.post()
-                .uri("/api/usecase/otherpath")
-                .accept(MediaType.APPLICATION_JSON)
-                .bodyValue("")
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new CreateFranchiseRequest("Nequi"))
                 .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
+                .expectStatus().isCreated()
+                .expectHeader().value("Location", location -> org.assertj.core.api.Assertions
+                        .assertThat(location).endsWith("/api/franchises/1"))
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(1)
+                .jsonPath("$.name").isEqualTo("Nequi")
+                .jsonPath("$.branches").isEmpty();
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsInvalid() {
+        when(createFranchiseUseCase.execute(any()))
+                .thenReturn(Mono.error(new InvalidFranchiseNameException()));
+
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new CreateFranchiseRequest("  "))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Franchise name must not be blank");
     }
 }
