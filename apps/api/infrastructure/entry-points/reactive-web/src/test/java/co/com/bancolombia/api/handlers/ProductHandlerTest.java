@@ -1,6 +1,7 @@
 package co.com.bancolombia.api.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
@@ -380,5 +381,75 @@ class ProductHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Product not found");
+    }
+
+    @Test
+    void shouldRejectAddingAProductWithoutName() {
+        webTestClient.post()
+                .uri("/api/branches/1/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":5}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(addProductUseCase);
+    }
+
+    @Test
+    void shouldRejectAddingAProductWithoutStock() {
+        webTestClient.post()
+                .uri("/api/branches/1/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":\"Arepa\"}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'stock' is required");
+
+        verifyNoInteractions(addProductUseCase);
+    }
+
+    @Test
+    void shouldReportEveryMissingFieldWhenAddingAProduct() {
+        webTestClient.post()
+                .uri("/api/branches/1/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required, Field 'stock' is required");
+
+        verifyNoInteractions(addProductUseCase);
+    }
+
+    @Test
+    void shouldRejectPatchingStockWithoutStock() {
+        webTestClient.patch()
+                .uri("/api/products/5/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'stock' is required");
+
+        verifyNoInteractions(patchProductStockUseCase);
+    }
+
+    @Test
+    void shouldRejectRenamingAProductWithoutName() {
+        webTestClient.patch()
+                .uri("/api/products/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(patchProductNameUseCase);
     }
 }

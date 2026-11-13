@@ -1,6 +1,7 @@
 package co.com.bancolombia.api.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
@@ -227,5 +228,33 @@ class BranchHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Branch not found");
+    }
+
+    @Test
+    void shouldRejectAddingABranchWithoutName() {
+        webTestClient.post()
+                .uri("/api/franchises/1/branches")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(addBranchUseCase);
+    }
+
+    @Test
+    void shouldRejectRenamingABranchWithoutName() {
+        webTestClient.patch()
+                .uri("/api/branches/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(patchBranchNameUseCase);
     }
 }

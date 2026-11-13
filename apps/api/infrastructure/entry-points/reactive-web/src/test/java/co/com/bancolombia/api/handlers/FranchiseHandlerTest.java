@@ -2,6 +2,7 @@ package co.com.bancolombia.api.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
@@ -114,20 +115,6 @@ class FranchiseHandlerTest {
                 .jsonPath("$.message").isEqualTo("Request body is required");
     }
 
-    @Test
-    void shouldReturnBadRequestWhenNameIsMissing() {
-        when(createFranchiseUseCase.execute(any()))
-                .thenReturn(Mono.error(new ValidationException("Franchise name must not be blank")));
-
-        webTestClient.post()
-                .uri("/api/franchises")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{}")
-                .exchange()
-                .expectStatus().isBadRequest()
-                .expectBody()
-                .jsonPath("$.message").isEqualTo("Franchise name must not be blank");
-    }
 
     @Test
     void shouldReturnBadRequestWhenBodyIsMalformed() {
@@ -287,5 +274,47 @@ class FranchiseHandlerTest {
                 .expectStatus().isEqualTo(503)
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Service temporarily unavailable");
+    }
+
+    @Test
+    void shouldRejectCreatingAFranchiseWithoutName() {
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(createFranchiseUseCase);
+    }
+
+    @Test
+    void shouldRejectCreatingAFranchiseWithNullName() {
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"name\":null}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(createFranchiseUseCase);
+    }
+
+    @Test
+    void shouldRejectRenamingAFranchiseWithoutName() {
+        webTestClient.patch()
+                .uri("/api/franchises/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+
+        verifyNoInteractions(patchFranchiseNameUseCase);
     }
 }

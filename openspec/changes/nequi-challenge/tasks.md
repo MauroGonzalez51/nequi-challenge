@@ -17,7 +17,7 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 
 ## 3. Reactive entrypoints
 
-- [ ] 3.1 Expose the nine endpoints with RouterFunctions and Handlers using Record DTOs and jakarta validation; verified by handler tests via WebTestClient (no `.block()`)
+- [x] 3.1 Expose the nine endpoints with RouterFunctions and Handlers using Record DTOs and jakarta validation; verified by handler tests via WebTestClient (no `.block()`)
 - [x] 3.2 Handle errors with `onErrorResume`/`onErrorReturn` mapped to HTTP statuses; verified by tests for 400 and 404 responses
 - [x] 3.3 Run the disqualification scan (`@RestController`, `.block(`, `java.util.stream`, `try`/`if` in flows); verified when it returns no hits
 
