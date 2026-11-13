@@ -13,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.bancolombia.api.RouterRest;
+import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.model.franchise.Franchise;
@@ -20,7 +21,7 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class })
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ErrorMapper.class })
 @WebFluxTest
 class FranchiseHandlerTest {
 
