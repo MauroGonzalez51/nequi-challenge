@@ -8,5 +8,7 @@ public interface ProductRepository {
 
     Mono<Product> findById(Long id);
 
+    Mono<Product> findTopByBranchId(Long branchId);
+
     Mono<Void> deleteById(Long id);
 }

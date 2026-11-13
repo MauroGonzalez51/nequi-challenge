@@ -22,6 +22,7 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.gettopstockproductperbranch.GetTopStockProductPerBranchUseCase;
 import co.com.bancolombia.usecase.patchbranchname.PatchBranchNameUseCase;
 import co.com.bancolombia.usecase.patchfranchisename.PatchFranchiseNameUseCase;
 import co.com.bancolombia.usecase.patchproductname.PatchProductNameUseCase;
@@ -59,6 +60,9 @@ class BranchHandlerTest {
 
     @MockitoBean
     private PatchProductNameUseCase patchProductNameUseCase;
+
+    @MockitoBean
+    private GetTopStockProductPerBranchUseCase getTopStockProductPerBranchUseCase;
 
     @Test
     void shouldReturnCreatedWhenBranchIsValid() {

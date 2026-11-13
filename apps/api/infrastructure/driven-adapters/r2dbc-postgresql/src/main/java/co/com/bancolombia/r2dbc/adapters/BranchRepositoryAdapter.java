@@ -8,6 +8,7 @@ import co.com.bancolombia.model.branch.gateways.BranchRepository;
 import co.com.bancolombia.r2dbc.entities.BranchEntity;
 import co.com.bancolombia.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.bancolombia.r2dbc.repositories.BranchEntityRepository;
+import reactor.core.publisher.Flux;
 
 @Repository
 public class BranchRepositoryAdapter
@@ -16,5 +17,10 @@ public class BranchRepositoryAdapter
 
     public BranchRepositoryAdapter(BranchEntityRepository repository, ObjectMapper mapper) {
         super(repository, mapper, data -> mapper.map(data, Branch.class));
+    }
+
+    @Override
+    public Flux<Branch> findByFranchiseId(Long franchiseId) {
+        return this.repository.findByFranchiseId(franchiseId).map(this::toEntity);
     }
 }

@@ -19,7 +19,8 @@ public class RouterRest {
                 .path("/api/franchises",
                         builder -> builder
                                 .POST("", handler::create)
-                                .PATCH("/{franchiseId}/name", handler::patchName))
+                                .PATCH("/{franchiseId}/name", handler::patchName)
+                                .GET("/{franchiseId}/top-stock-products", handler::getTopStockProducts))
                 .build();
     }
 

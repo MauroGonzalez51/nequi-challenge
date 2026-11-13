@@ -20,6 +20,11 @@ public class ProductRepositoryAdapter
     }
 
     @Override
+    public Mono<Product> findTopByBranchId(Long branchId) {
+        return this.repository.findFirstByBranchIdOrderByStockDescIdAsc(branchId).map(this::toEntity);
+    }
+
+    @Override
     public Mono<Void> deleteById(Long id) {
         return this.repository.deleteById(id);
     }

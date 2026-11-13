@@ -4,9 +4,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.api.dto.request.PatchNameRequest;
+import co.com.bancolombia.api.dto.response.BranchTopProductResponse;
 import co.com.bancolombia.api.dto.response.FranchiseResponse;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.gettopstockproductperbranch.GetTopStockProductPerBranchUseCase;
 import co.com.bancolombia.usecase.patchfranchisename.PatchFranchiseNameUseCase;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ import reactor.core.publisher.Mono;
 public class FranchiseHandler {
     private final CreateFranchiseUseCase createUseCase;
     private final PatchFranchiseNameUseCase patchFranchiseNameUseCase;
+    private final GetTopStockProductPerBranchUseCase getTopStockProductPerBranchUseCase;
     private final ErrorMapper errorMapper;
 
     public Mono<ServerResponse> create(ServerRequest request) {
@@ -35,6 +38,15 @@ public class FranchiseHandler {
                         .flatMap(franchiseId -> this.patchFranchiseNameUseCase
                                 .execute(franchiseId, body.name())))
                 .map(FranchiseResponse::from)
+                .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                .onErrorResume(this.errorMapper::toResponse);
+    }
+
+    public Mono<ServerResponse> getTopStockProducts(ServerRequest request) {
+        return RequestParams.franchiseId(request)
+                .flatMapMany(this.getTopStockProductPerBranchUseCase::execute)
+                .map(BranchTopProductResponse::from)
+                .collectList()
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
                 .onErrorResume(this.errorMapper::toResponse);
     }

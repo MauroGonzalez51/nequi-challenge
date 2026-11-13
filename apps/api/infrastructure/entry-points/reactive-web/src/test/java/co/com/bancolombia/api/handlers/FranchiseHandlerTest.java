@@ -18,15 +18,20 @@ import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
+import co.com.bancolombia.model.branch.Branch;
+import co.com.bancolombia.model.branch.BranchTopProduct;
 import co.com.bancolombia.model.franchise.Franchise;
+import co.com.bancolombia.model.product.Product;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.gettopstockproductperbranch.GetTopStockProductPerBranchUseCase;
 import co.com.bancolombia.usecase.patchbranchname.PatchBranchNameUseCase;
 import co.com.bancolombia.usecase.patchfranchisename.PatchFranchiseNameUseCase;
 import co.com.bancolombia.usecase.patchproductname.PatchProductNameUseCase;
 import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class })
@@ -60,6 +65,9 @@ class FranchiseHandlerTest {
 
     @MockitoBean
     private PatchProductNameUseCase patchProductNameUseCase;
+
+    @MockitoBean
+    private GetTopStockProductPerBranchUseCase getTopStockProductPerBranchUseCase;
 
     @Test
     void shouldReturnCreatedWhenFranchiseIsValid() {
@@ -211,5 +219,56 @@ class FranchiseHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Franchise not found");
+    }
+
+    @Test
+    void shouldReturnTopStockProductPerBranch() {
+        when(getTopStockProductPerBranchUseCase.execute(1L)).thenReturn(Flux.just(
+                new BranchTopProduct(Branch.builder().id(1L).name("Cartagena").franchiseId(1L).build(),
+                        Product.builder().id(7L).name("Arepa").stock(20).branchId(1L).build()),
+                new BranchTopProduct(Branch.builder().id(2L).name("Medellin").franchiseId(1L).build(), null)));
+
+        webTestClient.get()
+                .uri("/api/franchises/1/top-stock-products")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .json("[{\"id\":1,\"name\":\"Cartagena\",\"product\":{\"id\":7,\"name\":\"Arepa\",\"stock\":20}},"
+                        + "{\"id\":2,\"name\":\"Medellin\",\"product\":null}]");
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenFranchiseHasNoBranches() {
+        when(getTopStockProductPerBranchUseCase.execute(1L)).thenReturn(Flux.empty());
+
+        webTestClient.get()
+                .uri("/api/franchises/1/top-stock-products")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .json("[]");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenFranchiseOfTopStockDoesNotExist() {
+        when(getTopStockProductPerBranchUseCase.execute(99L))
+                .thenReturn(Flux.error(new RecordNotFoundException("Franchise not found")));
+
+        webTestClient.get()
+                .uri("/api/franchises/99/top-stock-products")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Franchise not found");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenTopStockFranchiseIdIsNotNumeric() {
+        webTestClient.get()
+                .uri("/api/franchises/abc/top-stock-products")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Franchise id must be a number");
     }
 }
