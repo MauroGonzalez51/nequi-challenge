@@ -13,6 +13,7 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.bancolombia.api.RouterRest;
 import co.com.bancolombia.api.dto.request.AddProductRequest;
+import co.com.bancolombia.api.dto.request.PatchProductStockRequest;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
@@ -21,6 +22,7 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import reactor.core.publisher.Mono;
 
 @ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class,
@@ -36,6 +38,9 @@ class ProductHandlerTest {
 
     @MockitoBean
     private RemoveProductUseCase removeProductUseCase;
+
+    @MockitoBean
+    private PatchProductStockUseCase patchProductStockUseCase;
 
     // Required only so RouterRest can build the other routes.
     @MockitoBean
@@ -195,5 +200,87 @@ class ProductHandlerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Product id must be a number");
+    }
+
+    @Test
+    void shouldReturnOkWhenStockIsPatched() {
+        Product updated = Product.builder().id(5L).name("Arepa").stock(20).branchId(1L).build();
+        when(patchProductStockUseCase.execute(5L, 20)).thenReturn(Mono.just(updated));
+
+        webTestClient.patch()
+                .uri("/api/products/5/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchProductStockRequest(20))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(5)
+                .jsonPath("$.name").isEqualTo("Arepa")
+                .jsonPath("$.stock").isEqualTo(20);
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchedStockIsInvalid() {
+        when(patchProductStockUseCase.execute(5L, -1))
+                .thenReturn(Mono.error(new ValidationException("Product stock must be greater than or equal to 0")));
+
+        webTestClient.patch()
+                .uri("/api/products/5/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchProductStockRequest(-1))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Product stock must be greater than or equal to 0");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchedStockIsNotNumeric() {
+        webTestClient.patch()
+                .uri("/api/products/5/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"stock\":\"abc\"}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Invalid Request Body");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchProductIdIsNotNumeric() {
+        webTestClient.patch()
+                .uri("/api/products/abc/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchProductStockRequest(5))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Product id must be a number");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchBodyIsMissing() {
+        webTestClient.patch()
+                .uri("/api/products/5/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Request body is required");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenProductToPatchDoesNotExist() {
+        when(patchProductStockUseCase.execute(99L, 5))
+                .thenReturn(Mono.error(new RecordNotFoundException("Product not found")));
+
+        webTestClient.patch()
+                .uri("/api/products/99/stock")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchProductStockRequest(5))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Product not found");
     }
 }

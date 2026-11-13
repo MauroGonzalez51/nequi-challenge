@@ -21,6 +21,7 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import reactor.core.publisher.Mono;
 
 @ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class })
@@ -42,6 +43,9 @@ class BranchHandlerTest {
 
     @MockitoBean
     private RemoveProductUseCase removeProductUseCase;
+
+    @MockitoBean
+    private PatchProductStockUseCase patchProductStockUseCase;
 
     @Test
     void shouldReturnCreatedWhenBranchIsValid() {

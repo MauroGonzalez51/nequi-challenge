@@ -14,6 +14,7 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
@@ -43,6 +44,9 @@ class ConfigTest {
 
     @MockitoBean
     private RemoveProductUseCase removeProductUseCase;
+
+    @MockitoBean
+    private PatchProductStockUseCase patchProductStockUseCase;
 
     @Test
     void securityHeadersShouldBePresent() {

@@ -29,8 +29,13 @@ public class RouterRest {
     @Bean
     public RouterFunction<ServerResponse> productRoutes(ProductHandler handler) {
         return route()
-                .path("/api/branches", builder -> builder.POST("/{branchId}/products", handler::create)
-                        .DELETE("/{branchId}/products/{productId}", handler::delete))
+                .path("/api/branches",
+                        builder -> builder
+                                .POST("/{branchId}/products", handler::create)
+                                .DELETE("/{branchId}/products/{productId}", handler::delete))
+                .path("/api/products",
+                        builder -> builder
+                                .PATCH("/{productId}/stock", handler::patchStock))
                 .build();
     }
 }
