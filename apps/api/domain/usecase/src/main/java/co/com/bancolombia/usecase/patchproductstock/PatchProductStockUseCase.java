@@ -23,7 +23,10 @@ public class PatchProductStockUseCase {
                                 .switchIfEmpty(Mono.error(() -> new ValidationException("Product id cannot be null")))
                                 .flatMap(this.repository::findById)
                                 .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Product not found"))))
-                .map(product -> product.toBuilder().stock(stock).build())
-                .flatMap(this.repository::save);
+                .flatMap(existing -> Mono.just(existing)
+                        .filter(product -> !stock.equals(product.getStock()))
+                        .map(product -> product.toBuilder().stock(stock).build())
+                        .flatMap(this.repository::save)
+                        .switchIfEmpty(Mono.just(existing)));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import co.com.bancolombia.api.RouterRest;
+import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.AddBranchRequest;
 import co.com.bancolombia.model.branch.Branch;
@@ -21,6 +22,9 @@ import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
+import co.com.bancolombia.usecase.patchbranchname.PatchBranchNameUseCase;
+import co.com.bancolombia.usecase.patchfranchisename.PatchFranchiseNameUseCase;
+import co.com.bancolombia.usecase.patchproductname.PatchProductNameUseCase;
 import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import reactor.core.publisher.Mono;
 
@@ -46,6 +50,15 @@ class BranchHandlerTest {
 
     @MockitoBean
     private PatchProductStockUseCase patchProductStockUseCase;
+
+    @MockitoBean
+    private PatchFranchiseNameUseCase patchFranchiseNameUseCase;
+
+    @MockitoBean
+    private PatchBranchNameUseCase patchBranchNameUseCase;
+
+    @MockitoBean
+    private PatchProductNameUseCase patchProductNameUseCase;
 
     @Test
     void shouldReturnCreatedWhenBranchIsValid() {
@@ -129,5 +142,86 @@ class BranchHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Franchise not found");
+    }
+
+    @Test
+    void shouldReturnOkWhenNameIsPatched() {
+        Branch updated = Branch.builder().id(5L).name("Renamed").franchiseId(1L).build();
+        when(patchBranchNameUseCase.execute(5L, "Renamed")).thenReturn(Mono.just(updated));
+
+        webTestClient.patch()
+                .uri("/api/branches/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchNameRequest("Renamed"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(5)
+                .jsonPath("$.name").isEqualTo("Renamed");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchedNameIsInvalid() {
+        when(patchBranchNameUseCase.execute(5L, "  "))
+                .thenReturn(Mono.error(new ValidationException("Branch name must not be blank")));
+
+        webTestClient.patch()
+                .uri("/api/branches/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchNameRequest("  "))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Branch name must not be blank");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchNameIdIsNotNumeric() {
+        webTestClient.patch()
+                .uri("/api/branches/abc/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchNameRequest("Renamed"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Branch id must be a number");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchNameBodyIsMissing() {
+        webTestClient.patch()
+                .uri("/api/branches/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Request body is required");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenPatchNameBodyIsMalformed() {
+        webTestClient.patch()
+                .uri("/api/branches/5/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("not json")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Invalid Request Body");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenEntityToRenameDoesNotExist() {
+        when(patchBranchNameUseCase.execute(99L, "Renamed"))
+                .thenReturn(Mono.error(new RecordNotFoundException("Branch not found")));
+
+        webTestClient.patch()
+                .uri("/api/branches/99/name")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new PatchNameRequest("Renamed"))
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Branch not found");
     }
 }

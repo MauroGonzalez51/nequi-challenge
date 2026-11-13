@@ -54,6 +54,17 @@ class PatchProductStockUseCaseTest {
     }
 
     @Test
+    void shouldDoNothingWhenStockIsTheSame() {
+        when(repository.findById(10L)).thenReturn(Mono.just(existing));
+
+        StepVerifier.create(useCase.execute(10L, 5))
+                .expectNext(existing)
+                .verifyComplete();
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void shouldFailWhenStockIsNull() {
         StepVerifier.create(useCase.execute(10L, null))
                 .expectError(ValidationException.class)

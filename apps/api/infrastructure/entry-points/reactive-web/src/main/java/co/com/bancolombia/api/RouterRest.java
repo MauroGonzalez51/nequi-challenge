@@ -16,13 +16,18 @@ public class RouterRest {
     @Bean
     public RouterFunction<ServerResponse> franchiseRoutes(FranchiseHandler handler) {
         return route()
-                .path("/api/franchises", builder -> builder.POST("", handler::create)).build();
+                .path("/api/franchises",
+                        builder -> builder
+                                .POST("", handler::create)
+                                .PATCH("/{franchiseId}/name", handler::patchName))
+                .build();
     }
 
     @Bean
     public RouterFunction<ServerResponse> branchRoutes(BranchHandler handler) {
         return route()
                 .path("/api/franchises/{franchiseId}/branches", builder -> builder.POST("", handler::create))
+                .path("/api/branches", builder -> builder.PATCH("/{branchId}/name", handler::patchName))
                 .build();
     }
 
@@ -35,7 +40,8 @@ public class RouterRest {
                                 .DELETE("/{branchId}/products/{productId}", handler::delete))
                 .path("/api/products",
                         builder -> builder
-                                .PATCH("/{productId}/stock", handler::patchStock))
+                                .PATCH("/{productId}/stock", handler::patchStock)
+                                .PATCH("/{productId}/name", handler::patchName))
                 .build();
     }
 }
