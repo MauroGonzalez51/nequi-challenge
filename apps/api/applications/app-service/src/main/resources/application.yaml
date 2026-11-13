@@ -53,3 +53,7 @@ resilience:
             minimum-number-of-calls: 5
             wait-duration-in-open-state: 10s
             permitted-number-of-calls-in-half-open-state: 3
+
+springdoc:
+    swagger-ui:
+        url: /openapi.yaml

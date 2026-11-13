@@ -1,0 +1,791 @@
+openapi: 3.0.3
+
+info:
+  title: Franchise Management API
+  version: 1.0.0
+  description: |
+    API to manage franchises, their branches and the products each branch sells.
+
+    **Hierarchy:** a franchise has many branches, and a branch has many products.
+
+    **Validation is split in two layers.**
+    Required fields are checked at the edge (`Field '<name>' is required`).
+    The values themselves (blank names, negative stock, ids that do not exist) are business
+    rules and are checked in the domain.
+
+    **Errors** always come as `{ "message": "..." }`:
+    `400` for a bad request, `404` when the franchise, branch or product does not exist, and
+    `503` when the database is unavailable (unreachable, too slow, or cut off by the circuit
+    breaker). A `503` never includes internal details.
+
+    **Ids** travel in the path as integers. A non-numeric id answers `400`.
+
+servers:
+  - url: /
+    description: The same host that serves this page
+
+tags:
+  - name: Franchises
+  - name: Branches
+  - name: Products
+
+paths:
+  /api/franchises:
+    post:
+      tags: [Franchises]
+      operationId: createFranchise
+      summary: Create a franchise
+      description: Creates a franchise with the given name. The new franchise has no branches yet.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFranchiseRequest'
+            examples:
+              valid:
+                summary: A valid franchise
+                value:
+                  name: Nequi
+      responses:
+        '201':
+          description: Franchise created.
+          headers:
+            Location:
+              description: URL of the created franchise.
+              schema:
+                type: string
+                example: http://localhost:8080/api/franchises/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FranchiseResponse'
+              example:
+                id: 1
+                name: Nequi
+                branches: []
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: The name field is missing or null
+                  value:
+                    message: Field 'name' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Franchise name must not be blank
+                invalidBody:
+                  summary: The body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/franchises/{franchiseId}/name:
+    patch:
+      tags: [Franchises]
+      operationId: renameFranchise
+      summary: Rename a franchise
+      description: |
+        Changes the name of a franchise and returns it.
+        Sending the name it already has changes nothing and still answers `200`.
+        The comparison is exact: `Nequi` and `nequi` are different names.
+      parameters:
+        - $ref: '#/components/parameters/FranchiseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchNameRequest'
+            examples:
+              valid:
+                summary: A new name
+                value:
+                  name: Nequi Colombia
+      responses:
+        '200':
+          description: The franchise with its current name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FranchiseResponse'
+              example:
+                id: 1
+                name: Nequi Colombia
+                branches: []
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: The name field is missing or null
+                  value:
+                    message: Field 'name' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Franchise name must not be blank
+                invalidId:
+                  summary: The id is not a number
+                  value:
+                    message: Franchise id must be a number
+                invalidBody:
+                  summary: The body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/FranchiseNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/franchises/{franchiseId}/top-stock-products:
+    get:
+      tags: [Franchises]
+      operationId: getTopStockProductPerBranch
+      summary: Top-stock product of each branch
+      description: |
+        For a franchise, returns each of its branches with the product that has the highest stock.
+
+        - Branches come ordered by id.
+        - If two products tie on stock, the one with the lowest id wins.
+        - A branch with no products is still listed, with `product` set to `null`.
+        - A franchise with no branches answers `200` with an empty list.
+      parameters:
+        - $ref: '#/components/parameters/FranchiseId'
+      responses:
+        '200':
+          description: One entry per branch of the franchise.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BranchTopProductResponse'
+              examples:
+                severalBranches:
+                  summary: One branch with products and one without
+                  value:
+                    - id: 1
+                      name: Cartagena
+                      product:
+                        id: 7
+                        name: Empanada
+                        stock: 20
+                    - id: 2
+                      name: Medellin
+                      product: null
+                noBranches:
+                  summary: A franchise without branches
+                  value: []
+        '400':
+          description: The id is not a number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: Franchise id must be a number
+        '404':
+          $ref: '#/components/responses/FranchiseNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/franchises/{franchiseId}/branches:
+    post:
+      tags: [Branches]
+      operationId: addBranch
+      summary: Add a branch to a franchise
+      description: Creates a branch that belongs to the franchise. The new branch has no products yet.
+      parameters:
+        - $ref: '#/components/parameters/FranchiseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddBranchRequest'
+            examples:
+              valid:
+                summary: A valid branch
+                value:
+                  name: Cartagena
+      responses:
+        '201':
+          description: Branch created.
+          headers:
+            Location:
+              description: URL of the created branch.
+              schema:
+                type: string
+                example: http://localhost:8080/api/franchises/1/branches/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+              example:
+                id: 1
+                name: Cartagena
+                products: []
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: The name field is missing or null
+                  value:
+                    message: Field 'name' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Branch name must not be blank
+                invalidId:
+                  summary: The franchise id is not a number
+                  value:
+                    message: Franchise id must be a number
+                invalidBody:
+                  summary: The body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/FranchiseNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/branches/{branchId}/name:
+    patch:
+      tags: [Branches]
+      operationId: renameBranch
+      summary: Rename a branch
+      description: |
+        Changes the name of a branch and returns it.
+        Sending the name it already has changes nothing and still answers `200`.
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchNameRequest'
+            examples:
+              valid:
+                summary: A new name
+                value:
+                  name: Cartagena Centro
+      responses:
+        '200':
+          description: The branch with its current name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BranchResponse'
+              example:
+                id: 1
+                name: Cartagena Centro
+                products: []
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: The name field is missing or null
+                  value:
+                    message: Field 'name' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Branch name must not be blank
+                invalidId:
+                  summary: The id is not a number
+                  value:
+                    message: Branch id must be a number
+                invalidBody:
+                  summary: The body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/BranchNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/branches/{branchId}/products:
+    post:
+      tags: [Products]
+      operationId: addProduct
+      summary: Add a product to a branch
+      description: |
+        Creates a product with a name and an initial stock in the branch.
+        Stock must be a whole number greater than or equal to 0. Decimals such as `1.5` are rejected.
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddProductRequest'
+            examples:
+              valid:
+                summary: A valid product
+                value:
+                  name: Empanada
+                  stock: 20
+              emptyStock:
+                summary: A product that starts out of stock (0 is valid)
+                value:
+                  name: Arepa
+                  stock: 0
+      responses:
+        '201':
+          description: Product created.
+          headers:
+            Location:
+              description: URL of the created product.
+              schema:
+                type: string
+                example: http://localhost:8080/api/branches/1/products/7
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+              example:
+                id: 7
+                name: Empanada
+                stock: 20
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Name and stock are missing (every missing field is reported)
+                  value:
+                    message: Field 'name' is required, Field 'stock' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Product name must not be blank
+                negativeStock:
+                  summary: The stock is negative
+                  value:
+                    message: Product stock must be greater than or equal to 0
+                invalidBody:
+                  summary: The stock is not a whole number, or the body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                invalidId:
+                  summary: The branch id is not a number
+                  value:
+                    message: Branch id must be a number
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/BranchNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/branches/{branchId}/products/{productId}:
+    delete:
+      tags: [Products]
+      operationId: removeProduct
+      summary: Remove a product from a branch
+      description: |
+        Deletes the product. The product must belong to the branch in the path: asking for a
+        product of another branch answers `404`, the same as a product that does not exist.
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '204':
+          description: Product removed. No body.
+        '400':
+          description: An id is not a number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidBranchId:
+                  value:
+                    message: Branch id must be a number
+                invalidProductId:
+                  value:
+                    message: Product id must be a number
+        '404':
+          description: The branch does not exist, or the product does not exist in that branch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                branchNotFound:
+                  value:
+                    message: Branch not found
+                productNotFound:
+                  summary: Missing, already removed, or from another branch
+                  value:
+                    message: Product not found
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/products/{productId}/stock:
+    patch:
+      tags: [Products]
+      operationId: updateProductStock
+      summary: Update the stock of a product
+      description: |
+        Sets the stock of a product and returns it. Stock must be a whole number greater than or
+        equal to 0. Sending the stock it already has changes nothing and still answers `200`.
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductStockRequest'
+            examples:
+              valid:
+                summary: A new stock
+                value:
+                  stock: 35
+      responses:
+        '200':
+          description: The product with its current stock.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+              example:
+                id: 7
+                name: Empanada
+                stock: 35
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingStock:
+                  summary: The stock field is missing or null
+                  value:
+                    message: Field 'stock' is required
+                negativeStock:
+                  summary: The stock is negative
+                  value:
+                    message: Product stock must be greater than or equal to 0
+                invalidBody:
+                  summary: The stock is not a whole number, or the body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                invalidId:
+                  summary: The id is not a number
+                  value:
+                    message: Product id must be a number
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /api/products/{productId}/name:
+    patch:
+      tags: [Products]
+      operationId: renameProduct
+      summary: Rename a product
+      description: |
+        Changes the name of a product and returns it.
+        Sending the name it already has changes nothing and still answers `200`.
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchNameRequest'
+            examples:
+              valid:
+                summary: A new name
+                value:
+                  name: Empanada de carne
+      responses:
+        '200':
+          description: The product with its current name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+              example:
+                id: 7
+                name: Empanada de carne
+                stock: 20
+        '400':
+          description: The request is not valid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  summary: The name field is missing or null
+                  value:
+                    message: Field 'name' is required
+                blankName:
+                  summary: The name is blank
+                  value:
+                    message: Product name must not be blank
+                invalidId:
+                  summary: The id is not a number
+                  value:
+                    message: Product id must be a number
+                invalidBody:
+                  summary: The body is not valid JSON
+                  value:
+                    message: Invalid Request Body
+                bodyRequired:
+                  summary: There is no body
+                  value:
+                    message: Request body is required
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+components:
+  parameters:
+    FranchiseId:
+      name: franchiseId
+      in: path
+      required: true
+      description: Id of the franchise.
+      schema:
+        type: integer
+        format: int64
+      example: 1
+    BranchId:
+      name: branchId
+      in: path
+      required: true
+      description: Id of the branch.
+      schema:
+        type: integer
+        format: int64
+      example: 1
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      description: Id of the product.
+      schema:
+        type: integer
+        format: int64
+      example: 7
+
+  responses:
+    FranchiseNotFound:
+      description: The franchise does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Franchise not found
+    BranchNotFound:
+      description: The branch does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Branch not found
+    ProductNotFound:
+      description: The product does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Product not found
+    ServiceUnavailable:
+      description: |
+        The database is not usable right now: unreachable, too slow, or cut off by the circuit
+        breaker. Reads are retried with backoff before giving up; writes are not retried.
+        The message never carries internal details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: Service temporarily unavailable
+
+  schemas:
+    CreateFranchiseRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Name of the franchise. Must not be blank.
+          example: Nequi
+
+    AddBranchRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Name of the branch. Must not be blank.
+          example: Cartagena
+
+    AddProductRequest:
+      type: object
+      required: [name, stock]
+      properties:
+        name:
+          type: string
+          description: Name of the product. Must not be blank.
+          example: Empanada
+        stock:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Initial stock, a whole number greater than or equal to 0.
+          example: 20
+
+    PatchNameRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: The new name. Must not be blank.
+          example: Nequi Colombia
+
+    PatchProductStockRequest:
+      type: object
+      required: [stock]
+      properties:
+        stock:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The new stock, a whole number greater than or equal to 0.
+          example: 35
+
+    FranchiseResponse:
+      type: object
+      required: [id, name, branches]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Nequi
+        branches:
+          type: array
+          description: Reserved for the franchise's branches. It is always empty for now.
+          items:
+            $ref: '#/components/schemas/BranchResponse'
+
+    BranchResponse:
+      type: object
+      required: [id, name, products]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Cartagena
+        products:
+          type: array
+          description: Reserved for the branch's products. It is always empty for now.
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+
+    ProductResponse:
+      type: object
+      required: [id, name, stock]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7
+        name:
+          type: string
+          example: Empanada
+        stock:
+          type: integer
+          format: int32
+          example: 20
+
+    BranchTopProductResponse:
+      type: object
+      required: [id, name, product]
+      description: A branch and its highest-stock product.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Id of the branch.
+          example: 1
+        name:
+          type: string
+          description: Name of the branch.
+          example: Cartagena
+        product:
+          nullable: true
+          description: The branch's highest-stock product, or `null` when the branch has no products.
+          allOf:
+            - $ref: '#/components/schemas/ProductResponse'
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Franchise not found

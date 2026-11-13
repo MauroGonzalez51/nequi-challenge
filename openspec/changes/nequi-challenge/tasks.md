@@ -30,7 +30,7 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 ## 5. Quality and docs
 
 - [x] 5.1 Configure JaCoCo; verified by a generated report after `./gradlew test`
-- [ ] 5.2 Document all endpoints with OpenAPI including examples; verified by opening Swagger UI and finding all nine endpoints with examples
+- [x] 5.2 Document all endpoints with OpenAPI including examples; verified by opening Swagger UI and finding all nine endpoints with examples
 - [ ] 5.3 Write the README and verify it from a clean clone; verified by following only its steps successfully
 
 ## 6. Docker and AWS
