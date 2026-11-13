@@ -18,10 +18,11 @@ import co.com.bancolombia.model.branch.Branch;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
+import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ErrorMapper.class })
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class })
 @WebFluxTest
 class BranchHandlerTest {
 
@@ -34,6 +35,9 @@ class BranchHandlerTest {
     // Required only so RouterRest can build its franchise routes.
     @MockitoBean
     private CreateFranchiseUseCase createFranchiseUseCase;
+
+    @MockitoBean
+    private AddProductUseCase addProductUseCase;
 
     @Test
     void shouldReturnCreatedWhenBranchIsValid() {

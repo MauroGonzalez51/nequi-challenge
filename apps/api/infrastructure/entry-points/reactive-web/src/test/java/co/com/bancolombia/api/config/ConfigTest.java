@@ -7,9 +7,11 @@ import co.com.bancolombia.api.RouterRest;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.api.handlers.BranchHandler;
+import co.com.bancolombia.api.handlers.ProductHandler;
 import co.com.bancolombia.api.handlers.FranchiseHandler;
 import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
+import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = {RouterRest.class, FranchiseHandler.class, BranchHandler.class, ErrorMapper.class})
+@ContextConfiguration(classes = {RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class})
 @WebFluxTest
 @Import({CorsConfig.class, SecurityHeadersConfig.class})
 class ConfigTest {
@@ -34,6 +36,9 @@ class ConfigTest {
 
     @MockitoBean
     private AddBranchUseCase addBranchUseCase;
+
+    @MockitoBean
+    private AddProductUseCase addProductUseCase;
 
     @Test
     void securityHeadersShouldBePresent() {
