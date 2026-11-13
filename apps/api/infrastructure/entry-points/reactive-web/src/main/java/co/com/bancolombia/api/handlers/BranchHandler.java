@@ -1,5 +1,6 @@
 package co.com.bancolombia.api.handlers;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
@@ -32,7 +33,7 @@ public class BranchHandler {
                 .flatMap(response -> ServerResponse.created(request.uriBuilder().path("/{id}").build(response.id()))
                         .bodyValue(response))
                 .onErrorResume(RecordNotFoundException.class,
-                        exception -> ServerResponse.unprocessableContent()
+                        exception -> ServerResponse.status(HttpStatus.NOT_FOUND)
                                 .bodyValue(new ErrorResponse(exception.getMessage())))
                 .onErrorResume(ValidationException.class,
                         exception -> ServerResponse.badRequest().bodyValue(new ErrorResponse(exception.getMessage())))

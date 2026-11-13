@@ -1,5 +1,6 @@
-package co.com.bancolombia.api;
+package co.com.bancolombia.api.handlers;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -10,22 +11,28 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
+
+import co.com.bancolombia.api.RouterRest;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
-import co.com.bancolombia.api.handlers.FranchiseHandler;
-import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.model.exception.ValidationException;
+import co.com.bancolombia.model.franchise.Franchise;
+import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class })
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class })
 @WebFluxTest
-class RouterRestTest {
+class FranchiseHandlerTest {
 
     @Autowired
     private WebTestClient webTestClient;
 
     @MockitoBean
     private CreateFranchiseUseCase createFranchiseUseCase;
+
+    // Required only so RouterRest can build its branch routes.
+    @MockitoBean
+    private AddBranchUseCase addBranchUseCase;
 
     @Test
     void shouldReturnCreatedWhenFranchiseIsValid() {
@@ -38,8 +45,7 @@ class RouterRestTest {
                 .bodyValue(new CreateFranchiseRequest("Nequi"))
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().value("Location", location -> org.assertj.core.api.Assertions
-                        .assertThat(location).endsWith("/api/franchises/1"))
+                .expectHeader().value("Location", location -> assertThat(location).endsWith("/api/franchises/1"))
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(1)
                 .jsonPath("$.name").isEqualTo("Nequi")
@@ -74,6 +80,9 @@ class RouterRestTest {
 
     @Test
     void shouldReturnBadRequestWhenNameIsMissing() {
+        when(createFranchiseUseCase.execute(any()))
+                .thenReturn(Mono.error(new ValidationException("Franchise name must not be blank")));
+
         webTestClient.post()
                 .uri("/api/franchises")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -81,7 +90,7 @@ class RouterRestTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+                .jsonPath("$.message").isEqualTo("Franchise name must not be blank");
     }
 
     @Test
