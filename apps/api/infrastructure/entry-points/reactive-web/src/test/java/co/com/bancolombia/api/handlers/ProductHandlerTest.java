@@ -19,6 +19,7 @@ import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.model.product.Product;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
+import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
@@ -32,6 +33,9 @@ class ProductHandlerTest {
 
     @MockitoBean
     private AddProductUseCase addProductUseCase;
+
+    @MockitoBean
+    private RemoveProductUseCase removeProductUseCase;
 
     // Required only so RouterRest can build the other routes.
     @MockitoBean
@@ -134,5 +138,62 @@ class ProductHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Branch not found");
+    }
+
+    @Test
+    void shouldReturnNoContentWhenProductIsDeleted() {
+        when(removeProductUseCase.execute(1L, 5L)).thenReturn(Mono.empty());
+
+        webTestClient.delete()
+                .uri("/api/branches/1/products/5")
+                .exchange()
+                .expectStatus().isNoContent()
+                .expectBody().isEmpty();
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenProductToDeleteDoesNotExist() {
+        when(removeProductUseCase.execute(1L, 99L))
+                .thenReturn(Mono.error(new RecordNotFoundException("Product not found")));
+
+        webTestClient.delete()
+                .uri("/api/branches/1/products/99")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Product not found");
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenBranchOfProductToDeleteDoesNotExist() {
+        when(removeProductUseCase.execute(99L, 5L))
+                .thenReturn(Mono.error(new RecordNotFoundException("Branch not found")));
+
+        webTestClient.delete()
+                .uri("/api/branches/99/products/5")
+                .exchange()
+                .expectStatus().isNotFound()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Branch not found");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenDeleteBranchIdIsNotNumeric() {
+        webTestClient.delete()
+                .uri("/api/branches/abc/products/5")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Branch id must be a number");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenDeleteProductIdIsNotNumeric() {
+        webTestClient.delete()
+                .uri("/api/branches/1/products/abc")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Product id must be a number");
     }
 }

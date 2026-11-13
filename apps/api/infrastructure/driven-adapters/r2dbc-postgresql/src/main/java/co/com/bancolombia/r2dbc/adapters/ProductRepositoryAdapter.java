@@ -8,6 +8,7 @@ import co.com.bancolombia.model.product.gateways.ProductRepository;
 import co.com.bancolombia.r2dbc.entities.ProductEntity;
 import co.com.bancolombia.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.bancolombia.r2dbc.repositories.ProductEntityRepository;
+import reactor.core.publisher.Mono;
 
 @Repository
 public class ProductRepositoryAdapter
@@ -16,5 +17,10 @@ public class ProductRepositoryAdapter
 
     public ProductRepositoryAdapter(ProductEntityRepository repository, ObjectMapper mapper) {
         super(repository, mapper, data -> mapper.map(data, Product.class));
+    }
+
+    @Override
+    public Mono<Void> deleteById(Long id) {
+        return this.repository.deleteById(id);
     }
 }

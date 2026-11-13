@@ -19,6 +19,7 @@ import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
+import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
@@ -38,6 +39,9 @@ class BranchHandlerTest {
 
     @MockitoBean
     private AddProductUseCase addProductUseCase;
+
+    @MockitoBean
+    private RemoveProductUseCase removeProductUseCase;
 
     @Test
     void shouldReturnCreatedWhenBranchIsValid() {

@@ -12,6 +12,7 @@ import co.com.bancolombia.api.handlers.FranchiseHandler;
 import co.com.bancolombia.model.franchise.Franchise;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
+import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ class ConfigTest {
 
     @MockitoBean
     private AddProductUseCase addProductUseCase;
+
+    @MockitoBean
+    private RemoveProductUseCase removeProductUseCase;
 
     @Test
     void securityHeadersShouldBePresent() {
