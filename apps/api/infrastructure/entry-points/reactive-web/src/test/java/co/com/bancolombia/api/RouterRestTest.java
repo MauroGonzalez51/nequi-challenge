@@ -61,4 +61,39 @@ class RouterRestTest {
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Franchise name must not be blank");
     }
+
+    @Test
+    void shouldReturnBadRequestWhenBodyIsMissing() {
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Request body is required");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNameIsMissing() {
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{}")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Field 'name' is required");
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenBodyIsMalformed() {
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("not json")
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Invalid Request Body");
+    }
 }
