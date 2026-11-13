@@ -10,11 +10,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
-
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.api.handlers.FranchiseHandler;
 import co.com.bancolombia.model.franchise.Franchise;
-import co.com.bancolombia.model.franchise.exception.InvalidFranchiseNameException;
+import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import reactor.core.publisher.Mono;
 
@@ -50,7 +49,7 @@ class RouterRestTest {
     @Test
     void shouldReturnBadRequestWhenNameIsInvalid() {
         when(createFranchiseUseCase.execute(any()))
-                .thenReturn(Mono.error(new InvalidFranchiseNameException()));
+                .thenReturn(Mono.error(new ValidationException("Franchise name must not be blank")));
 
         webTestClient.post()
                 .uri("/api/franchises")

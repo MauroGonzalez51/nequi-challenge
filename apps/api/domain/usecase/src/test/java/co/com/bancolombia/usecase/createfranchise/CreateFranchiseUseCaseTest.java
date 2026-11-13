@@ -12,7 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import co.com.bancolombia.model.franchise.Franchise;
-import co.com.bancolombia.model.franchise.exception.InvalidFranchiseNameException;
+import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.model.franchise.gateways.FranchiseRepository;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -39,7 +39,7 @@ class CreateFranchiseUseCaseTest {
     @Test
     void shouldFailWhenNameIsBlank() {
         StepVerifier.create(useCase.execute("   "))
-                .expectError(InvalidFranchiseNameException.class)
+                .expectError(ValidationException.class)
                 .verify();
 
         verify(repository, never()).save(any());
@@ -48,7 +48,7 @@ class CreateFranchiseUseCaseTest {
     @Test
     void shouldFailWhenNameIsNull() {
         StepVerifier.create(useCase.execute(null))
-                .expectError(InvalidFranchiseNameException.class)
+                .expectError(ValidationException.class)
                 .verify();
 
         verify(repository, never()).save(any());
