@@ -5,31 +5,31 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 ## 1. Project foundation
 
 - [x] 1.1 Decide the persistence store and record it in design.md; verified when the decision is listed there
-- [ ] 1.2 Confirm Gradle modules follow the Bancolombia scaffold (domain, infrastructure, entrypoints); verified with `./gradlew build` passing in `apps/api` and the layer review against `clean-architecture`
-- [ ] 1.3 Confirm Lombok, Java 17 and `jakarta.*` conventions; verified by a search finding no `javax.` imports
+- [x] 1.2 Confirm Gradle modules follow the Bancolombia scaffold (domain, infrastructure, entrypoints); verified with `./gradlew build` passing in `apps/api` and the layer review against `clean-architecture`
+- [x] 1.3 Confirm Lombok, Java 17 and `jakarta.*` conventions; verified by a search finding no `javax.` imports
 
 ## 2. Domain model and use cases
 
-- [ ] 2.1 Model Franchise, Branch and Product as `@Builder` entities and declare ports in the domain; verified by review against `franchise-api` and `clean-architecture`
-- [ ] 2.2 Implement use cases for create franchise, add branch, add product, remove product, update stock; verified by StepVerifier unit tests covering success and not-found scenarios
-- [ ] 2.3 Implement the top-stock-per-branch use case in the domain; verified by a StepVerifier test with several branches and an empty branch
-- [ ] 2.4 Implement the three rename use cases; verified by StepVerifier tests for success and not-found
+- [x] 2.1 Model Franchise, Branch and Product as `@Builder` entities and declare ports in the domain; verified by review against `franchise-api` and `clean-architecture`
+- [x] 2.2 Implement use cases for create franchise, add branch, add product, remove product, update stock; verified by StepVerifier unit tests covering success and not-found scenarios
+- [x] 2.3 Implement the top-stock-per-branch use case in the domain; verified by a StepVerifier test with several branches and an empty branch
+- [x] 2.4 Implement the three rename use cases; verified by StepVerifier tests for success and not-found
 
 ## 3. Reactive entrypoints
 
 - [ ] 3.1 Expose the nine endpoints with RouterFunctions and Handlers using Record DTOs and jakarta validation; verified by handler tests via WebTestClient (no `.block()`)
-- [ ] 3.2 Handle errors with `onErrorResume`/`onErrorReturn` mapped to HTTP statuses; verified by tests for 400 and 404 responses
-- [ ] 3.3 Run the disqualification scan (`@RestController`, `.block(`, `java.util.stream`, `try`/`if` in flows); verified when it returns no hits
+- [x] 3.2 Handle errors with `onErrorResume`/`onErrorReturn` mapped to HTTP statuses; verified by tests for 400 and 404 responses
+- [x] 3.3 Run the disqualification scan (`@RestController`, `.block(`, `java.util.stream`, `try`/`if` in flows); verified when it returns no hits
 
 ## 4. Persistence and resilience
 
 - [ ] 4.1 Implement the persistence adapter with the chosen cloud store behind the domain ports; verified by an integration test and a successful run against the cloud store
-- [ ] 4.2 Add Circuit Breaker, Timeout and Retry with backoff on persistence calls; verified by tests that trigger each pattern
-- [ ] 4.3 Be able to explain backpressure for this API; verified by a verbal walkthrough reviewed by Claude
+- [x] 4.2 Add Circuit Breaker, Timeout and Retry with backoff on persistence calls; verified by tests that trigger each pattern
+- [x] 4.3 Be able to explain backpressure for this API; verified by a verbal walkthrough reviewed by Claude
 
 ## 5. Quality and docs
 
-- [ ] 5.1 Configure JaCoCo; verified by a generated report after `./gradlew test`
+- [x] 5.1 Configure JaCoCo; verified by a generated report after `./gradlew test`
 - [ ] 5.2 Document all endpoints with OpenAPI including examples; verified by opening Swagger UI and finding all nine endpoints with examples
 - [ ] 5.3 Write the README and verify it from a clean clone; verified by following only its steps successfully
 

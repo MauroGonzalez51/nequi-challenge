@@ -1,5 +1,8 @@
 package co.com.bancolombia.api.dto.request;
 
-public record CreateFranchiseRequest(String name) {
+import jakarta.validation.constraints.NotNull;
+
+/** Shape of the request: required fields must be present. Values are checked in the domain. */
+public record CreateFranchiseRequest(@NotNull(message = RequestMessages.REQUIRED) String name) {
 
 }

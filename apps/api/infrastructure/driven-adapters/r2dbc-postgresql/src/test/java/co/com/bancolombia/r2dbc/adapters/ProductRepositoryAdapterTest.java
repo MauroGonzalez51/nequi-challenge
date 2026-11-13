@@ -11,6 +11,7 @@ import org.reactivecommons.utils.ObjectMapper;
 import co.com.bancolombia.model.product.Product;
 import co.com.bancolombia.r2dbc.entities.ProductEntity;
 import co.com.bancolombia.r2dbc.repositories.ProductEntityRepository;
+import co.com.bancolombia.r2dbc.helper.TestResilience;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -31,7 +32,7 @@ class ProductRepositoryAdapterTest {
         when(repository.findFirstByBranchIdOrderByStockDescIdAsc(1L)).thenReturn(Mono.just(entity));
         when(mapper.map(entity, Product.class)).thenReturn(product);
 
-        ProductRepositoryAdapter adapter = new ProductRepositoryAdapter(repository, mapper);
+        ProductRepositoryAdapter adapter = new ProductRepositoryAdapter(repository, mapper, TestResilience.create());
 
         StepVerifier.create(adapter.findTopByBranchId(1L))
                 .expectNext(product)
@@ -42,7 +43,7 @@ class ProductRepositoryAdapterTest {
     void shouldReturnEmptyWhenTheBranchHasNoProducts() {
         when(repository.findFirstByBranchIdOrderByStockDescIdAsc(2L)).thenReturn(Mono.empty());
 
-        ProductRepositoryAdapter adapter = new ProductRepositoryAdapter(repository, mapper);
+        ProductRepositoryAdapter adapter = new ProductRepositoryAdapter(repository, mapper, TestResilience.create());
 
         StepVerifier.create(adapter.findTopByBranchId(2L))
                 .verifyComplete();

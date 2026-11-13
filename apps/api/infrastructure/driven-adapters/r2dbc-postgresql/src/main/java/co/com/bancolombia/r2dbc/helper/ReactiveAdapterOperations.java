@@ -13,13 +13,16 @@ import java.util.function.Function;
 public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudRepository<D, I> & ReactiveQueryByExampleExecutor<D>> {
     protected R repository;
     protected ObjectMapper mapper;
+    protected final PersistenceResilience resilience;
     private final Class<D> dataClass;
     private final Function<D, E> toEntityFn;
 
     @SuppressWarnings("unchecked")
-    protected ReactiveAdapterOperations(R repository, ObjectMapper mapper, Function<D, E> toEntityFn) {
+    protected ReactiveAdapterOperations(R repository, ObjectMapper mapper, Function<D, E> toEntityFn,
+            PersistenceResilience resilience) {
         this.repository = repository;
         this.mapper = mapper;
+        this.resilience = resilience;
         ParameterizedType genericSuperclass = (ParameterizedType) this.getClass().getGenericSuperclass();
         this.dataClass = (Class<D>) genericSuperclass.getActualTypeArguments()[1];
         this.toEntityFn = toEntityFn;
@@ -34,12 +37,12 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
     }
 
     public Mono<E> save(E entity) {
-        return saveData(toData(entity))
+        return resilience.write(() -> saveData(toData(entity)))
                 .map(this::toEntity);
     }
 
     protected Flux<E> saveAllEntities(Flux<E> entities) {
-        return saveData(entities.map(this::toData))
+        return resilience.writeMany(() -> saveData(entities.map(this::toData)))
                 .map(this::toEntity);
     }
 
@@ -52,16 +55,16 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
     }
 
     public Mono<E> findById(I id) {
-        return repository.findById(id).map(this::toEntity);
+        return resilience.read(() -> repository.findById(id)).map(this::toEntity);
     }
 
     public Flux<E> findByExample(E entity) {
-        return repository.findAll(Example.of(toData(entity)))
+        return resilience.readMany(() -> repository.findAll(Example.of(toData(entity))))
                 .map(this::toEntity);
     }
 
     public Flux<E> findAll() {
-        return repository.findAll()
+        return resilience.readMany(() -> repository.findAll())
                 .map(this::toEntity);
     }
 }

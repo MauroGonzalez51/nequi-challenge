@@ -17,6 +17,7 @@ import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
+import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.model.branch.Branch;
 import co.com.bancolombia.model.branch.BranchTopProduct;
@@ -270,5 +271,21 @@ class FranchiseHandlerTest {
                 .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Franchise id must be a number");
+    }
+
+    @Test
+    void shouldReturnServiceUnavailableWithoutLeakingInternalDetails() {
+        when(createFranchiseUseCase.execute(any()))
+                .thenReturn(Mono.error(new ServiceUnavailableException("Database is unavailable",
+                        new IllegalStateException("connection refused to 10.0.0.5:5432"))));
+
+        webTestClient.post()
+                .uri("/api/franchises")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new CreateFranchiseRequest("Nequi"))
+                .exchange()
+                .expectStatus().isEqualTo(503)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("Service temporarily unavailable");
     }
 }

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebInputException;
 
 import co.com.bancolombia.model.exception.RecordNotFoundException;
+import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.model.exception.ValidationException;
 import reactor.test.StepVerifier;
 
@@ -37,6 +38,14 @@ class ErrorMapperTest {
     void shouldMapServerWebInputToBadRequest() {
         StepVerifier.create(errorMapper.toResponse(new ServerWebInputException("bad")))
                 .expectNextMatches(response -> response.statusCode().equals(HttpStatus.BAD_REQUEST))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldMapServiceUnavailableToServiceUnavailable() {
+        StepVerifier.create(errorMapper.toResponse(
+                new ServiceUnavailableException("Database is unavailable", new IllegalStateException("boom"))))
+                .expectNextMatches(response -> response.statusCode().equals(HttpStatus.SERVICE_UNAVAILABLE))
                 .verifyComplete();
     }
 

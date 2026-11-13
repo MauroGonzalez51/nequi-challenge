@@ -1,5 +1,8 @@
 package co.com.bancolombia.api.dto.request;
 
-public record PatchProductStockRequest(Integer stock) {
-    
+import jakarta.validation.constraints.NotNull;
+
+/** Shape of the request: required fields must be present. Values are checked in the domain. */
+public record PatchProductStockRequest(@NotNull(message = RequestMessages.REQUIRED) Integer stock) {
+
 }

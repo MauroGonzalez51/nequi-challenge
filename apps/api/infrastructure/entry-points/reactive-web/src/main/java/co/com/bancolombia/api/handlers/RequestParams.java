@@ -2,7 +2,11 @@ package co.com.bancolombia.api.handlers;
 
 import org.springframework.web.reactive.function.server.ServerRequest;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+
 import co.com.bancolombia.api.exception.InvalidRequestException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -15,6 +19,7 @@ final class RequestParams {
     private static final String BRANCH_ID = "branchId";
     private static final String PRODUCT_ID = "productId";
     private static final String BODY_REQUIRED = "Request body is required";
+    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
     private RequestParams() {
     }
@@ -33,7 +38,20 @@ final class RequestParams {
 
     static <T> Mono<T> body(ServerRequest request, Class<T> type) {
         return request.bodyToMono(type)
-                .switchIfEmpty(Mono.error(() -> new InvalidRequestException(BODY_REQUIRED)));
+                .switchIfEmpty(Mono.error(() -> new InvalidRequestException(BODY_REQUIRED)))
+                .flatMap(RequestParams::validated);
+    }
+
+    // Bean Validation on the request shape. Emits the body when it is valid, or fails with
+    // every violation joined (sorted, since the violations come in no fixed order).
+    private static <T> Mono<T> validated(T body) {
+        return Flux.fromIterable(VALIDATOR.validate(body))
+                .map(violation -> "Field '" + violation.getPropertyPath() + "' " + violation.getMessage())
+                .sort()
+                .collectList()
+                .filter(messages -> !messages.isEmpty())
+                .flatMap(messages -> Mono.<T>error(new InvalidRequestException(String.join(", ", messages))))
+                .defaultIfEmpty(body);
     }
 
     private static Mono<Long> id(ServerRequest request, String name, String label) {

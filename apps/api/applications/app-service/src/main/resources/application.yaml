@@ -40,3 +40,16 @@ adapters:
         schema: public
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
+
+resilience:
+    persistence:
+        timeout: 2s
+        retry:
+            max-attempts: 3
+            backoff: 200ms
+        circuit-breaker:
+            failure-rate-threshold: 50
+            sliding-window-size: 10
+            minimum-number-of-calls: 5
+            wait-duration-in-open-state: 10s
+            permitted-number-of-calls-in-half-open-state: 3

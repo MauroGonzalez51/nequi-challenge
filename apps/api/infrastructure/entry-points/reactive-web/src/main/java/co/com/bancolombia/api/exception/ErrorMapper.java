@@ -7,6 +7,7 @@ import org.springframework.web.server.ServerWebInputException;
 
 import co.com.bancolombia.api.dto.response.ErrorResponse;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
+import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.model.exception.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -30,6 +31,12 @@ public class ErrorMapper {
                         exception -> respond(HttpStatus.BAD_REQUEST, exception.getMessage()))
                 .onErrorResume(ServerWebInputException.class,
                         ignored -> respond(HttpStatus.BAD_REQUEST, "Invalid Request Body"))
+                .onErrorResume(ServiceUnavailableException.class, exception -> {
+                    // The cause goes as text: a Throwable as last argument would print a full stack trace per 503.
+                    log.warn("Service unavailable: {} (cause: {})", exception.getMessage(),
+                            String.valueOf(exception.getCause()));
+                    return respond(HttpStatus.SERVICE_UNAVAILABLE, "Service temporarily unavailable");
+                })
                 .onErrorResume(exception -> {
                     log.error("Unexpected error", exception);
                     return respond(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");

@@ -27,7 +27,7 @@ class ReactiveAdapterOperationsTest {
         repository = mock(DummyRepository.class);
         mapper = mock(ObjectMapper.class);
         operations = new ReactiveAdapterOperations<DummyEntity, DummyData, String, DummyRepository>(
-                repository, mapper, DummyEntity::toEntity) {
+                repository, mapper, DummyEntity::toEntity, TestResilience.create()) {
         };
     }
 
