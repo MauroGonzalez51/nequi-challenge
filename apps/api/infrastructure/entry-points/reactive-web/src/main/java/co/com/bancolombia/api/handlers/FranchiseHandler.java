@@ -6,7 +6,6 @@ import co.com.bancolombia.api.dto.request.CreateFranchiseRequest;
 import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.dto.response.FranchiseResponse;
 import co.com.bancolombia.api.exception.ErrorMapper;
-import co.com.bancolombia.api.exception.InvalidRequestException;
 import co.com.bancolombia.usecase.createfranchise.CreateFranchiseUseCase;
 import co.com.bancolombia.usecase.patchfranchisename.PatchFranchiseNameUseCase;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -21,9 +20,7 @@ public class FranchiseHandler {
     private final ErrorMapper errorMapper;
 
     public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(CreateFranchiseRequest.class)
-                .switchIfEmpty(Mono
-                        .error(() -> new InvalidRequestException("Request body is required")))
+        return RequestParams.body(request, CreateFranchiseRequest.class)
                 .flatMap(body -> this.createUseCase.execute(body.name()))
                 .map(FranchiseResponse::from)
                 .flatMap(response -> ServerResponse
@@ -33,10 +30,8 @@ public class FranchiseHandler {
     }
 
     public Mono<ServerResponse> patchName(ServerRequest request) {
-        return request.bodyToMono(PatchNameRequest.class)
-                .switchIfEmpty(Mono
-                        .error(() -> new InvalidRequestException("Request body is required")))
-                .flatMap(body -> PathParams.id(request, "franchiseId", "Franchise id")
+        return RequestParams.body(request, PatchNameRequest.class)
+                .flatMap(body -> RequestParams.franchiseId(request)
                         .flatMap(franchiseId -> this.patchFranchiseNameUseCase
                                 .execute(franchiseId, body.name())))
                 .map(FranchiseResponse::from)

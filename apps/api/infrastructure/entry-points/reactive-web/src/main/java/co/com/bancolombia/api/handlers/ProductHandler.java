@@ -9,7 +9,6 @@ import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.dto.request.PatchProductStockRequest;
 import co.com.bancolombia.api.dto.response.ProductResponse;
 import co.com.bancolombia.api.exception.ErrorMapper;
-import co.com.bancolombia.api.exception.InvalidRequestException;
 import co.com.bancolombia.usecase.addproduct.AddProductUseCase;
 import co.com.bancolombia.usecase.patchproductname.PatchProductNameUseCase;
 import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
@@ -27,10 +26,8 @@ public class ProductHandler {
     private final ErrorMapper errorMapper;
 
     public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(AddProductRequest.class)
-                .switchIfEmpty(Mono
-                        .error(() -> new InvalidRequestException("Request body is required")))
-                .flatMap(body -> PathParams.id(request, "branchId", "Branch id")
+        return RequestParams.body(request, AddProductRequest.class)
+                .flatMap(body -> RequestParams.branchId(request)
                         .flatMap(branchId -> this.addProductUseCase.execute(branchId,
                                 body.name(), body.stock())))
                 .map(ProductResponse::from)
@@ -41,17 +38,16 @@ public class ProductHandler {
     }
 
     public Mono<ServerResponse> delete(ServerRequest request) {
-        return Mono.zip(PathParams.id(request, "branchId", "Branch id"),
-                PathParams.id(request, "productId", "Product id"))
+        return Mono.zip(RequestParams.branchId(request),
+                RequestParams.productId(request))
                 .flatMap(ids -> this.removeProductUseCase.execute(ids.getT1(), ids.getT2()))
                 .then(ServerResponse.noContent().build())
                 .onErrorResume(this.errorMapper::toResponse);
     }
 
     public Mono<ServerResponse> patchStock(ServerRequest request) {
-        return request.bodyToMono(PatchProductStockRequest.class)
-                .switchIfEmpty(Mono.error(() -> new InvalidRequestException("Request body is required")))
-                .flatMap(body -> PathParams.id(request, "productId", "Product id")
+        return RequestParams.body(request, PatchProductStockRequest.class)
+                .flatMap(body -> RequestParams.productId(request)
                         .flatMap(productId -> this.patchProductStockUseCase.execute(productId, body.stock())))
                 .map(ProductResponse::from)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
@@ -59,9 +55,8 @@ public class ProductHandler {
     }
 
     public Mono<ServerResponse> patchName(ServerRequest request) {
-        return request.bodyToMono(PatchNameRequest.class)
-                .switchIfEmpty(Mono.error(() -> new InvalidRequestException("Request body is required")))
-                .flatMap(body -> PathParams.id(request, "productId", "Product id")
+        return RequestParams.body(request, PatchNameRequest.class)
+                .flatMap(body -> RequestParams.productId(request)
                         .flatMap(productId -> this.patchProductNameUseCase.execute(productId, body.name())))
                 .map(ProductResponse::from)
                 .flatMap(response -> ServerResponse.ok().bodyValue(response))
