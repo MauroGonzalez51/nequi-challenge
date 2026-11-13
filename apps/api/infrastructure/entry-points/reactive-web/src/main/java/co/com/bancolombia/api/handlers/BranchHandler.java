@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import co.com.bancolombia.api.dto.request.AddBranchRequest;
-import co.com.bancolombia.api.dto.response.AddBranchResponse;
+import co.com.bancolombia.api.dto.response.BranchResponse;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.exception.InvalidRequestException;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
@@ -30,7 +30,7 @@ public class BranchHandler {
                                         "Franchise id must be a number"))
                         .flatMap(franchiseId -> this.addBranchUseCase.execute(franchiseId,
                                 body.name())))
-                .map(AddBranchResponse::from)
+                .map(BranchResponse::from)
                 .flatMap(response -> ServerResponse
                         .created(request.uriBuilder().path("/{id}").build(response.id()))
                         .bodyValue(response))
