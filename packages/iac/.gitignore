@@ -1,0 +1,21 @@
+# Terraform working dir and state (state can hold secrets)
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+
+# Saved plans: binary, can embed secrets
+tfplan
+*.tfplan
+
+# Crash logs and local overrides
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Variable files with secrets
+*.auto.tfvars
+secrets.tfvars

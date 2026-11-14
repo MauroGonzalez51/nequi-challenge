@@ -4,3 +4,11 @@
 .moon/docker
 node_modules
 __pycache__
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.auto.tfvars
+secrets.tfvars
+.aws/

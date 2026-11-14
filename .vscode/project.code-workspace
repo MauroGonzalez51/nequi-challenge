@@ -9,6 +9,10 @@
             "path": "../apps/api",
         },
         {
+            "name": "+ IAC",
+            "path": "../packages/iac"
+        },
+        {
             "name": "@ Moon Config",
             "path": "../.moon",
         },
