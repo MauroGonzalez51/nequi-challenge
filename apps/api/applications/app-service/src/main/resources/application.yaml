@@ -40,6 +40,7 @@ adapters:
         schema: public
         username: ${DB_USERNAME}
         password: ${DB_PASSWORD}
+        ssl-mode: ${DB_SSL_MODE:require}
 
 resilience:
     persistence:
