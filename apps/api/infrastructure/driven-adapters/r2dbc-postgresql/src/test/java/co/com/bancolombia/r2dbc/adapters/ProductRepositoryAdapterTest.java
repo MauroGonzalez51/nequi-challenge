@@ -1,5 +1,6 @@
 package co.com.bancolombia.r2dbc.adapters;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.Test;
@@ -47,5 +48,17 @@ class ProductRepositoryAdapterTest {
 
         StepVerifier.create(adapter.findTopByBranchId(2L))
                 .verifyComplete();
+    }
+
+    @Test
+    void shouldDeleteTheProductById() {
+        when(repository.deleteById(7L)).thenReturn(Mono.empty());
+
+        ProductRepositoryAdapter adapter = new ProductRepositoryAdapter(repository, mapper, TestResilience.create());
+
+        StepVerifier.create(adapter.deleteById(7L))
+                .verifyComplete();
+
+        verify(repository).deleteById(7L);
     }
 }
