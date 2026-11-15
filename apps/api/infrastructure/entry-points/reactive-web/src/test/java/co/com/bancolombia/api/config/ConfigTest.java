@@ -74,6 +74,7 @@ class ConfigTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new CreateFranchiseRequest("Nequi"))
                 .exchange()
+                .expectStatus().isCreated()
                 .expectHeader().valueEquals("Content-Security-Policy",
                         "default-src 'self'; frame-ancestors 'self'; form-action 'self'")
                 .expectHeader().valueEquals("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
