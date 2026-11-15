@@ -29,6 +29,11 @@ resource "aws_ecs_task_definition" "this" {
 
       portMappings = [{ containerPort = var.app_port, protocol = "tcp" }]
 
+      # Plain config (not a secret): the app reads it to expose or hide Swagger.
+      environment = [
+        { name = "SWAGGER_ENABLED", value = tostring(var.swagger_enabled) }
+      ]
+
       # valueFrom "<arn>:<json-key>::" pulls one key of the JSON secret.
       secrets = [
         for k in local.db_secret_keys : {

@@ -73,4 +73,5 @@ module "ecs" {
   desired_count      = var.desired_count
   min_capacity       = var.min_capacity
   max_capacity       = var.max_capacity
+  swagger_enabled    = var.swagger_enabled
 }

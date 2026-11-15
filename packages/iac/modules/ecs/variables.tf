@@ -100,3 +100,9 @@ variable "cpu_target" {
   type        = number
   default     = 60
 }
+
+variable "swagger_enabled" {
+  description = "Serve Swagger UI and the OpenAPI spec (SWAGGER_ENABLED in the app). Off by default."
+  type        = bool
+  default     = false
+}

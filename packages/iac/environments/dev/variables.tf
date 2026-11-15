@@ -38,3 +38,9 @@ variable "max_capacity" {
   type        = number
   default     = 3
 }
+
+variable "swagger_enabled" {
+  description = "Expose Swagger UI and the OpenAPI spec."
+  type        = bool
+  default     = false
+}

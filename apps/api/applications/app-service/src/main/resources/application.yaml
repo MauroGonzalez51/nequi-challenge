@@ -19,6 +19,10 @@ spring:
         init:
             mode: always
 
+    web:
+        resources:
+            add-mappings: ${SWAGGER_ENABLED:false}
+
 management:
     endpoints:
         web:
@@ -56,5 +60,8 @@ resilience:
             permitted-number-of-calls-in-half-open-state: 3
 
 springdoc:
+    api-docs:
+        enabled: ${SWAGGER_ENABLED:false}
     swagger-ui:
+        enabled: ${SWAGGER_ENABLED:false}
         url: /openapi.yaml

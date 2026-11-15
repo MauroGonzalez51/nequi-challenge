@@ -75,6 +75,9 @@ y editá `apps/api/.env` con los datos de tu base:
 | `DB_USERNAME` | `tu_usuario` |
 | `DB_PASSWORD` | `tu_clave` |
 | `DB_SSL_MODE` | `disable` |
+| `SWAGGER_ENABLED` | `true` |
+
+`SWAGGER_ENABLED` expone Swagger UI, `/openapi.yaml` y `/v3/api-docs`. Si no se define vale `false`, y los tres dan 404. En AWS lo activa Terraform solo en `dev` y `staging`.
 
 `DB_SSL_MODE` define cómo se conecta la API a PostgreSQL (`disable`, `require`, `verify-full`...). Si no se define, vale `require`, que es lo que exige RDS en AWS. Un PostgreSQL local sin SSL necesita `DB_SSL_MODE=disable`, que ya trae `.env.example`.
 
@@ -148,13 +151,16 @@ Comportamientos a tener en cuenta:
 
 ### Errores
 
-Todos los errores salen como `{"message": "..."}`:
+Todos los errores salen como `{"message": "...", "errorCode": "..."}`. El `message` es para personas y su texto puede cambiar. El `errorCode` es estable y es el que deben usar los clientes para decidir qué hacer.
 
-| Código | Cuándo |
-|---|---|
-| `400` | JSON inválido, falta el body, un campo obligatorio no viene, un id no es numérico, o un valor no es válido (nombre vacío, stock negativo) |
-| `404` | La franquicia, la sucursal o el producto no existe. Un producto de otra sucursal también da `404` |
-| `503` | La base de datos no está disponible. El mensaje es fijo y no filtra detalles internos |
+| HTTP | `errorCode` | Cuándo |
+|---|---|---|
+| `400` | `VALIDATION_ERROR` | Un valor rompe una regla de negocio (nombre vacío, stock negativo) |
+| `400` | `INVALID_REQUEST` | Falta un campo obligatorio o el body, o un id no es numérico |
+| `400` | `INVALID_BODY` | El JSON es inválido o un campo tiene el tipo equivocado (por ejemplo, un decimal como stock) |
+| `404` | `RECORD_NOT_FOUND` | La franquicia, la sucursal o el producto no existe. Un producto de otra sucursal también da `404` |
+| `503` | `SERVICE_UNAVAILABLE` | La base de datos no está disponible. El mensaje es fijo y no filtra detalles internos |
+| `500` | `INTERNAL_ERROR` | Error inesperado. El mensaje es fijo y no filtra detalles |
 
 ### Validación en dos capas
 

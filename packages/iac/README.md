@@ -121,11 +121,13 @@ aws sts get-caller-identity   # debe mostrar .../user/terraform-deployer
 
 Cada directorio de `environments/` es un root module independiente con su propio state. `main.tf`, `variables.tf` y `outputs.tf` son idénticos entre ellos. Solo cambian el `backend.tf` (la `key` del state) y el `*.tfvars`.
 
-| Environment | RDS multi-AZ | Tasks (mín–máx) | State key |
-|---|---|---|---|
-| `dev` | no | 1–2 | `dev/terraform.tfstate` |
-| `staging` | no | 1–2 | `staging/terraform.tfstate` |
-| `prod` | sí | 2–4 | `prod/terraform.tfstate` |
+| Environment | RDS multi-AZ | Tasks (mín–máx) | Swagger | State key |
+|---|---|---|---|---|
+| `dev` | no | 1–2 | sí | `dev/terraform.tfstate` |
+| `staging` | no | 1–2 | sí | `staging/terraform.tfstate` |
+| `prod` | sí | 2–4 | no | `prod/terraform.tfstate` |
+
+`swagger_enabled` (en el `*.tfvars`) llega a la tarea como la variable `SWAGGER_ENABLED`. Es configuración, no un secreto, por eso va en `environment` y no en `secrets`. En `prod` la UI, `/openapi.yaml` y `/v3/api-docs` responden 404.
 
 **Por qué un directorio por environment y no workspaces:** el state y los valores de cada uno quedan visibles y separados, y un `apply` en dev no puede tocar prod por un workspace mal seleccionado. El costo es duplicar tres archivos. Los módulos sí se comparten.
 
