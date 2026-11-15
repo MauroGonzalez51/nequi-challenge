@@ -24,26 +24,28 @@ public class ErrorMapper {
     public Mono<ServerResponse> toResponse(Throwable error) {
         return Mono.<ServerResponse>error(error)
                 .onErrorResume(RecordNotFoundException.class,
-                        exception -> respond(HttpStatus.NOT_FOUND, exception.getMessage()))
+                        exception -> respond(HttpStatus.NOT_FOUND, exception.getMessage(), "RECORD_NOT_FOUND"))
                 .onErrorResume(ValidationException.class,
-                        exception -> respond(HttpStatus.BAD_REQUEST, exception.getMessage()))
+                        exception -> respond(HttpStatus.BAD_REQUEST, exception.getMessage(), "VALIDATION_ERROR"))
                 .onErrorResume(InvalidRequestException.class,
-                        exception -> respond(HttpStatus.BAD_REQUEST, exception.getMessage()))
+                        exception -> respond(HttpStatus.BAD_REQUEST, exception.getMessage(), "INVALID_REQUEST"))
                 .onErrorResume(ServerWebInputException.class,
-                        ignored -> respond(HttpStatus.BAD_REQUEST, "Invalid Request Body"))
+                        ignored -> respond(HttpStatus.BAD_REQUEST, "Invalid Request Body", "INVALID_BODY"))
                 .onErrorResume(ServiceUnavailableException.class, exception -> {
-                    // The cause goes as text: a Throwable as last argument would print a full stack trace per 503.
+                    // The cause goes as text: a Throwable as last argument would print a full stack
+                    // trace per 503.
                     log.warn("Service unavailable: {} (cause: {})", exception.getMessage(),
                             String.valueOf(exception.getCause()));
-                    return respond(HttpStatus.SERVICE_UNAVAILABLE, "Service temporarily unavailable");
+                    return respond(HttpStatus.SERVICE_UNAVAILABLE,
+                            "Service temporarily unavailable", "SERVICE_UNAVAILABLE");
                 })
                 .onErrorResume(exception -> {
                     log.error("Unexpected error", exception);
-                    return respond(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+                    return respond(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "INTERNAL_ERROR");
                 });
     }
 
-    private Mono<ServerResponse> respond(HttpStatus status, String message) {
-        return ServerResponse.status(status).bodyValue(new ErrorResponse(message));
+    private Mono<ServerResponse> respond(HttpStatus status, String message, String errorCode) {
+        return ServerResponse.status(status).bodyValue(new ErrorResponse(message, errorCode));
     }
 }
