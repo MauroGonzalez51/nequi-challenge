@@ -1,0 +1,27 @@
+project:
+    title: IAC
+    description: Infraestructure as Code using terraform modules
+
+tasks:
+    script:
+        preset: server
+        options:
+            runFromWorkspaceRoot: false
+            interactive: true
+            cache: false
+
+    init:
+        command: scripts/init.sh
+        extends: script
+
+    deploy:
+        command: scripts/deploy.sh
+        extends: script
+
+    destroy:
+        command: scripts/destroy.sh
+        extends: script
+
+    start-tunnel:
+        command: scripts/start-tunnel.sh
+        extends: script
