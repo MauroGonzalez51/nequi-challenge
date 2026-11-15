@@ -29,7 +29,7 @@ class BranchRepositoryAdapterTest {
         BranchEntity entity = new BranchEntity(1L, "Cartagena", 1L);
         Branch branch = Branch.builder().id(1L).name("Cartagena").franchiseId(1L).build();
 
-        when(repository.findByFranchiseId(1L)).thenReturn(Flux.just(entity));
+        when(repository.findByFranchiseIdOrderByIdAsc(1L)).thenReturn(Flux.just(entity));
         when(mapper.map(entity, Branch.class)).thenReturn(branch);
 
         BranchRepositoryAdapter adapter = new BranchRepositoryAdapter(repository, mapper, TestResilience.create());

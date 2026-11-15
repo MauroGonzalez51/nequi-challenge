@@ -6,7 +6,7 @@ import co.com.bancolombia.r2dbc.entities.BranchEntity;
 import reactor.core.publisher.Flux;
 
 public interface BranchEntityRepository
-                extends ReactiveCrudRepository<BranchEntity, Long>, ReactiveQueryByExampleExecutor<BranchEntity> {
+        extends ReactiveCrudRepository<BranchEntity, Long>, ReactiveQueryByExampleExecutor<BranchEntity> {
 
-        Flux<BranchEntity> findByFranchiseId(Long franchiseId);
+    Flux<BranchEntity> findByFranchiseIdOrderByIdAsc(Long franchiseId);
 }

@@ -23,7 +23,7 @@ public class BranchRepositoryAdapter
 
     @Override
     public Flux<Branch> findByFranchiseId(Long franchiseId) {
-        return this.resilience.readMany(() -> this.repository.findByFranchiseId(franchiseId))
+        return this.resilience.readMany(() -> this.repository.findByFranchiseIdOrderByIdAsc(franchiseId))
                 .map(this::toEntity);
     }
 }
