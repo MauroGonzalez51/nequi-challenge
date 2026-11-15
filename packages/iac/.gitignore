@@ -1,6 +1,5 @@
 # Terraform working dir and state (state can hold secrets)
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 
