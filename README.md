@@ -4,6 +4,18 @@ Reto técnico Nequi. API reactiva para administrar **franquicias**, sus **sucurs
 
 Una franquicia tiene muchas sucursales y una sucursal tiene muchos productos.
 
+## Estructura del repositorio
+
+Monorepo orquestado con [Moon](https://moonrepo.dev).
+
+| Ruta | Qué contiene |
+|---|---|
+| [`apps/api`](apps/api) | La API: código Java, pruebas y Dockerfile. Su arquitectura se detalla [más abajo](#arquitectura), y el [README de `apps/api`](apps/api/README.md) explica la plantilla de Clean Architecture. |
+| [`packages/iac`](packages/iac) | Infraestructura en Terraform y scripts de despliegue en AWS. Ver su [README](packages/iac/README.md) para montar y destruir los environments. |
+| [`openspec`](openspec) | Especificación del reto: requisitos, decisiones de diseño y tareas. |
+
+Para correr la API en local, seguir este README. Para llevarla a AWS, ir a [Despliegue en AWS](#despliegue-en-aws).
+
 ## Stack
 
 | Pieza | Tecnología |
@@ -62,6 +74,9 @@ y editá `apps/api/.env` con los datos de tu base:
 | `DB_NAME` | `nequi-challenge` |
 | `DB_USERNAME` | `tu_usuario` |
 | `DB_PASSWORD` | `tu_clave` |
+| `DB_SSL_MODE` | `disable` |
+
+`DB_SSL_MODE` define cómo se conecta la API a PostgreSQL (`disable`, `require`, `verify-full`...). Si no se define, vale `require`, que es lo que exige RDS en AWS. Un PostgreSQL local sin SSL necesita `DB_SSL_MODE=disable`, que ya trae `.env.example`.
 
 `apps/api/.env` está en `.gitignore`: las credenciales no se versionan.
 
@@ -178,6 +193,26 @@ moon run api:gradlew -- test
 Las pruebas usan JUnit 5, Mockito y `StepVerifier`. Nunca se usa `.block()`. Cubren los casos de uso, los handlers (con `WebTestClient`), los adaptadores y cada patrón de resiliencia.
 
 JaCoCo genera el reporte de cada módulo al correr las pruebas, en `build/reports/jacocoHtml/index.html` y `build/reports/jacoco.xml` dentro del módulo. Por ejemplo, `apps/api/domain/usecase/build/reports/jacocoHtml/index.html`.
+
+## Despliegue en AWS
+
+La API corre en AWS con ECS Fargate detrás de un ALB, con RDS PostgreSQL y credenciales en Secrets Manager. Todo está definido en Terraform, en [`packages/iac`](packages/iac), con tres environments: `dev`, `staging` y `prod`.
+
+```bash
+cd packages/iac
+
+AWS_PROFILE=<admin> scripts/init.sh   # una vez por cuenta: usuario deployer y bucket de state
+scripts/deploy.sh dev                 # compila, sube la imagen y aplica Terraform
+scripts/destroy.sh dev                # apaga todo (la infraestructura cobra por hora)
+```
+
+| Script | Para qué |
+|---|---|
+| `scripts/init.sh` | Prepara una cuenta nueva: usuario IAM, perfil local y bootstrap |
+| `scripts/deploy.sh <env>` | Despliega un environment de punta a punta |
+| `scripts/destroy.sh <env\|bootstrap>` | Destruye un environment o el bootstrap |
+
+Requisitos, arquitectura, decisiones, costos y solución de problemas están en el [README de infraestructura](packages/iac/README.md).
 
 ## Decisiones de diseño
 
