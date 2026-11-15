@@ -101,7 +101,8 @@ class FranchiseHandlerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Franchise name must not be blank");
+                .jsonPath("$.message").isEqualTo("Franchise name must not be blank")
+                .jsonPath("$.errorCode").isEqualTo("VALIDATION_ERROR");
     }
 
     @Test
@@ -112,7 +113,8 @@ class FranchiseHandlerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Request body is required");
+                .jsonPath("$.message").isEqualTo("Request body is required")
+                .jsonPath("$.errorCode").isEqualTo("INVALID_REQUEST");
     }
 
 
@@ -125,7 +127,8 @@ class FranchiseHandlerTest {
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Invalid Request Body");
+                .jsonPath("$.message").isEqualTo("Invalid Request Body")
+                .jsonPath("$.errorCode").isEqualTo("INVALID_BODY");
     }
 
     @Test
@@ -206,7 +209,8 @@ class FranchiseHandlerTest {
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Franchise not found");
+                .jsonPath("$.message").isEqualTo("Franchise not found")
+                .jsonPath("$.errorCode").isEqualTo("RECORD_NOT_FOUND");
     }
 
     @Test
@@ -273,7 +277,8 @@ class FranchiseHandlerTest {
                 .exchange()
                 .expectStatus().isEqualTo(503)
                 .expectBody()
-                .jsonPath("$.message").isEqualTo("Service temporarily unavailable");
+                .jsonPath("$.message").isEqualTo("Service temporarily unavailable")
+                .jsonPath("$.errorCode").isEqualTo("SERVICE_UNAVAILABLE");
     }
 
     @Test
