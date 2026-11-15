@@ -36,7 +36,8 @@ import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class })
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class,
+        ErrorMapper.class })
 @WebFluxTest
 class FranchiseHandlerTest {
 
@@ -82,11 +83,11 @@ class FranchiseHandlerTest {
                 .bodyValue(new CreateFranchiseRequest("Nequi"))
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().value("Location", location -> assertThat(location).endsWith("/api/franchises/1"))
+                .expectHeader()
+                .value("Location", location -> assertThat(location).endsWith("/api/franchises/1"))
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(1)
-                .jsonPath("$.name").isEqualTo("Nequi")
-                .jsonPath("$.branches").isEmpty();
+                .jsonPath("$.name").isEqualTo("Nequi");
     }
 
     @Test
@@ -116,7 +117,6 @@ class FranchiseHandlerTest {
                 .jsonPath("$.message").isEqualTo("Request body is required")
                 .jsonPath("$.errorCode").isEqualTo("INVALID_REQUEST");
     }
-
 
     @Test
     void shouldReturnBadRequestWhenBodyIsMalformed() {
@@ -218,7 +218,8 @@ class FranchiseHandlerTest {
         when(getTopStockProductPerBranchUseCase.execute(1L)).thenReturn(Flux.just(
                 new BranchTopProduct(Branch.builder().id(1L).name("Cartagena").franchiseId(1L).build(),
                         Product.builder().id(7L).name("Arepa").stock(20).branchId(1L).build()),
-                new BranchTopProduct(Branch.builder().id(2L).name("Medellin").franchiseId(1L).build(), null)));
+                new BranchTopProduct(Branch.builder().id(2L).name("Medellin").franchiseId(1L).build(),
+                        null)));
 
         webTestClient.get()
                 .uri("/api/franchises/1/top-stock-products")

@@ -65,7 +65,6 @@ paths:
               example:
                 id: 1
                 name: Nequi
-                branches: []
         '400':
           description: The request is not valid.
           content:
@@ -128,7 +127,6 @@ paths:
               example:
                 id: 1
                 name: Nequi Colombia
-                branches: []
         '400':
           description: The request is not valid.
           content:
@@ -254,7 +252,6 @@ paths:
               example:
                 id: 1
                 name: Cartagena
-                products: []
         '400':
           description: The request is not valid.
           content:
@@ -323,7 +320,6 @@ paths:
               example:
                 id: 1
                 name: Cartagena Centro
-                products: []
         '400':
           description: The request is not valid.
           content:
@@ -760,7 +756,7 @@ components:
 
     FranchiseResponse:
       type: object
-      required: [id, name, branches]
+      required: [id, name]
       properties:
         id:
           type: integer
@@ -769,15 +765,10 @@ components:
         name:
           type: string
           example: Nequi
-        branches:
-          type: array
-          description: Reserved for the franchise's branches. It is always empty for now.
-          items:
-            $ref: '#/components/schemas/BranchResponse'
 
     BranchResponse:
       type: object
-      required: [id, name, products]
+      required: [id, name]
       properties:
         id:
           type: integer
@@ -786,11 +777,6 @@ components:
         name:
           type: string
           example: Cartagena
-        products:
-          type: array
-          description: Reserved for the branch's products. It is always empty for now.
-          items:
-            $ref: '#/components/schemas/ProductResponse'
 
     ProductResponse:
       type: object

@@ -30,7 +30,8 @@ import co.com.bancolombia.usecase.patchproductname.PatchProductNameUseCase;
 import co.com.bancolombia.usecase.patchproductstock.PatchProductStockUseCase;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class, ErrorMapper.class })
+@ContextConfiguration(classes = { RouterRest.class, FranchiseHandler.class, BranchHandler.class, ProductHandler.class,
+        ErrorMapper.class })
 @WebFluxTest
 class BranchHandlerTest {
 
@@ -77,11 +78,11 @@ class BranchHandlerTest {
                 .exchange()
                 .expectStatus().isCreated()
                 .expectHeader().value("Location",
-                        location -> assertThat(location).endsWith("/api/franchises/1/branches/10"))
+                        location -> assertThat(location)
+                                .endsWith("/api/franchises/1/branches/10"))
                 .expectBody()
                 .jsonPath("$.id").isEqualTo(10)
-                .jsonPath("$.name").isEqualTo("Cartagena")
-                .jsonPath("$.products").isEmpty();
+                .jsonPath("$.name").isEqualTo("Cartagena");
     }
 
     @Test
