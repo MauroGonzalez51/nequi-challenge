@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# One-time setup of a fresh AWS account: deployer user (01), local access key (02), bootstrap.
+# One-time setup of a fresh AWS account: deployer user (01), local access key (02), tunnel user (03), bootstrap.
 # Usage: scripts/init.sh [--yes]
 #   --yes  skips the interactive confirmation of the bootstrap apply.
 # Run it with ADMIN credentials (root or an admin profile), NOT with the nequi-tf profile:
-# steps 01 and 02 create that user. If you already run as the deployer, it only does the bootstrap.
+# steps 01, 02 and 03 create the users (03 needs admin too). If you already run as the deployer, it only does the bootstrap.
 # Re-runnable: each step is skipped or converges when its work is already done.
 set -euo pipefail
 
@@ -37,10 +37,10 @@ echo ">> Running as: $ARN"
 if [[ "$ARN" == *"user/$USER_NAME" ]]; then
   echo ">> Already the deployer: skipping steps 01 and 02."
 else
-  echo ">> [1/3] Deployer user, group and policy (01)"
+  echo ">> [1/4] Deployer user, group and policy (01)"
   "$SCRIPTS_DIR/01-create-deployer.sh"
 
-  echo ">> [2/3] Access key and local profile '$PROFILE' (02)"
+  echo ">> [2/4] Access key and local profile '$PROFILE' (02)"
   if deployer_ready; then
     echo "   Profile '$PROFILE' already works: skipping 02."
   else
@@ -62,9 +62,12 @@ else
     done
     deployer_ready || { echo "Profile '$PROFILE' still invalid after 30s. Retry in a minute." >&2; exit 1; }
   fi
+
+  echo ">> [3/4] Tunnel user, bastion role and local profile (03)"
+  "$SCRIPTS_DIR/03-create-tunnel-user.sh"
 fi
 
-echo ">> [3/3] Bootstrap (state bucket)"
+echo ">> [4/4] Bootstrap (state bucket)"
 export AWS_PROFILE="$PROFILE"
 cd "$BOOTSTRAP_DIR"
 terraform init -input=false

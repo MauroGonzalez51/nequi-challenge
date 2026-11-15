@@ -45,6 +45,20 @@ if [[ "$TARGET" == "bootstrap" ]]; then
   exit 0
 fi
 
+# A tunnel left open (start-tunnel.sh killed without cleanup) leaves an EC2 outside Terraform's state.
+# Its ENI sits in the ECS security group and a private subnet, so destroy would fail with
+# DependencyViolation. Terminate it first. The deployer has ec2:*, no extra permissions needed.
+BASTION_IDS="$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=nequi-$TARGET-db-bastion" "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+  --query 'Reservations[].Instances[].InstanceId' --output text)"
+if [[ -n "$BASTION_IDS" ]]; then
+  echo ">> Tunnel bastion still alive ($BASTION_IDS): terminating before destroy"
+  # shellcheck disable=SC2086  # space-separated list on purpose
+  aws ec2 terminate-instances --instance-ids $BASTION_IDS >/dev/null
+  # shellcheck disable=SC2086
+  aws ec2 wait instance-terminated --instance-ids $BASTION_IDS
+fi
+
 cd "$IAC_DIR/environments/$TARGET"
 terraform init -input=false -backend-config="bucket=$BUCKET"
 terraform destroy -input=false -var-file="$TARGET.tfvars" $AUTO_APPROVE

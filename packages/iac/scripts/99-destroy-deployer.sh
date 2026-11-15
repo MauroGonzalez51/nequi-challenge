@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cleanup after the challenge. Run as root or an admin, NOT as the deployer.
-# Deletes every access key, the user, the group policy and the group.
+# Deletes every access key, the user, the group policy and the group, plus the tunnel user and bastion role.
 # Run `terraform destroy` in every env BEFORE this, or you lose the permissions
 # needed to clean up.
 set -euo pipefail
@@ -34,3 +34,26 @@ aws iam delete-group-policy --group-name "$GROUP_NAME" --policy-name "$POLICY_NA
 aws iam delete-group --group-name "$GROUP_NAME"
 
 echo "Deployer user and group deleted."
+
+# --- Tunnel user (03-create-tunnel-user.sh), same order: keys first, then the user. ---
+TUNNEL_USER="${TUNNEL_USER:-nequi-tunnel}"
+ROLE_NAME="nequi-db-bastion"
+
+# `|| true` everywhere: each piece may already be gone.
+for key_id in $(aws iam list-access-keys --user-name "$TUNNEL_USER" \
+  --query 'AccessKeyMetadata[].AccessKeyId' --output text 2>/dev/null || true); do
+  aws iam delete-access-key --user-name "$TUNNEL_USER" --access-key-id "$key_id"
+done
+TUNNEL_GROUP="${TUNNEL_GROUP:-nequi-tunnelers}"
+aws iam remove-user-from-group --group-name "$TUNNEL_GROUP" --user-name "$TUNNEL_USER" 2>/dev/null || true
+aws iam delete-user --user-name "$TUNNEL_USER" 2>/dev/null || true
+aws iam delete-group-policy --group-name "$TUNNEL_GROUP" --policy-name nequi-tunnel 2>/dev/null || true
+aws iam delete-group --group-name "$TUNNEL_GROUP" 2>/dev/null || true
+
+# The role cannot go while it sits in the instance profile or has a policy attached.
+aws iam remove-role-from-instance-profile --instance-profile-name "$ROLE_NAME" --role-name "$ROLE_NAME" 2>/dev/null || true
+aws iam delete-instance-profile --instance-profile-name "$ROLE_NAME" 2>/dev/null || true
+aws iam detach-role-policy --role-name "$ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore 2>/dev/null || true
+aws iam delete-role --role-name "$ROLE_NAME" 2>/dev/null || true
+
+echo "Tunnel user, role and instance profile deleted."

@@ -44,7 +44,7 @@ packages/iac/
 │   ├── dev/
 │   ├── staging/
 │   └── prod/
-├── policies/       política IAM del usuario que despliega
+├── policies/       políticas IAM: usuario que despliega y usuario del túnel a la base
 └── scripts/        scripts de operación (ver más abajo)
 ```
 
@@ -79,12 +79,14 @@ Los scripts se corren desde `packages/iac`.
 
 | Script | Cuándo | Qué hace |
 |---|---|---|
-| `scripts/init.sh [--yes]` | Una vez por cuenta | Corre `01`, `02` y el bootstrap en orden. Salta lo que ya está hecho y avisa si el usuario ya tiene 2 access keys. |
+| `scripts/init.sh [--yes]` | Una vez por cuenta | Corre `01`, `02`, `03` y el bootstrap en orden. Salta lo que ya está hecho y avisa si el usuario ya tiene 2 access keys. |
 | `scripts/deploy.sh <env> [--yes]` | Cada deploy | Compila el jar, crea el repo ECR, construye y sube la imagen, aplica Terraform y fuerza el rollout de ECS. Espera a que el service estabilice e imprime el health. |
-| `scripts/destroy.sh <env\|bootstrap> [--yes]` | Al terminar | Destruye un environment, o el bootstrap. El bootstrap se niega si algún environment aún tiene recursos. |
+| `scripts/destroy.sh <env\|bootstrap> [--yes]` | Al terminar | Destruye un environment, o el bootstrap. Antes termina el bastion del túnel si quedó vivo. El bootstrap se niega si algún environment aún tiene recursos. |
 | `scripts/01-create-deployer.sh` | Una vez por cuenta | Crea grupo, política y usuario IAM `terraform-deployer`. Idempotente. |
 | `scripts/02-create-access-key.sh` | Una vez por máquina | Crea una access key y la guarda en el perfil local `nequi-tf`. No imprime el secret. |
-| `scripts/99-destroy-deployer.sh` | Al terminar el reto | Borra keys, usuario y grupo. Antes, destruir los environments. |
+| `scripts/03-create-tunnel-user.sh` | Una vez por cuenta | Con admin. Crea el rol `nequi-db-bastion`, el usuario `nequi-tunnel` y su access key en el perfil local `nequi-tunnel`. Idempotente. `init.sh` ya lo llama. |
+| `scripts/start-tunnel.sh <env> [puerto]` | Cuando se necesite la base | Lanza una EC2 temporal, abre el túnel SSM a RDS y deja la terminal colgada. Ctrl+C termina la EC2. Ver [Acceso a la base de datos](#acceso-a-la-base-de-datos). |
+| `scripts/99-destroy-deployer.sh` | Al terminar el reto | Borra keys, usuario y grupo del deployer, y también el usuario `nequi-tunnel`, el rol y el instance profile. Antes, destruir los environments. |
 
 `--yes` salta la confirmación interactiva de Terraform. Variables opcionales: `AWS_PROFILE` (por defecto `nequi-tf`), `REGION` (`us-east-1`) e `IMAGE_TAG` (`latest`, solo en `deploy.sh`).
 
@@ -182,9 +184,34 @@ El primer deploy de un environment tarda unos 10 a 15 minutos. Casi todo es RDS.
 
 ## Acceso a la base de datos
 
-RDS no es público y su security group solo acepta tráfico de las tasks de ECS. Desde una laptop, `psql` no llega. Para inspeccionar datos hay que entrar por la red de la VPC (por ejemplo, un bastion con túnel SSM o ECS Exec). **No está implementado**: exigiría ampliar la política del deployer (instance profile, `iam:PassRole` hacia EC2 y SSM) y agregar el módulo correspondiente.
+RDS no es público y su security group solo acepta tráfico del SG de ECS. Desde una laptop, `psql` no llega. `scripts/start-tunnel.sh` resuelve esto sin tocar el Terraform:
 
-La contraseña vive en el secret `<name>/db` de Secrets Manager:
+```bash
+scripts/start-tunnel.sh dev      # dev | staging | prod, puerto local opcional (15432)
+```
+
+```
+DBeaver ─▶ localhost:15432 ══ SSM ══▶ EC2 temporal (SG nequi-<env>-ecs) ─▶ RDS :5432
+```
+
+1. Lanza una `t3.nano` en una subnet privada con el **SG de ECS**, que RDS ya acepta: no hay reglas nuevas.
+2. Espera al agente SSM, lee el secret `nequi-<env>/db` e imprime host, base y usuario. La contraseña **no** se imprime ni va al portapapeles (los gestores de portapapeles guardan historial y el scrollback guarda la salida): se escribe en un archivo `mktemp` con permisos `0600`, en formato pgpass, que se borra al salir.
+3. Abre el port-forward y deja la terminal colgada. **Ctrl+C o SIGTERM terminan la EC2.**
+
+En DBeaver: PostgreSQL, host `localhost`, puerto `15432`, la contraseña leída del archivo (`cut -d: -f5 <archivo>`) y SSL en modo `require` (con `verify-full` falla: el certificado es del host de RDS, no de `localhost`).
+
+**Preparación (una vez por cuenta, con admin):** `init.sh` ya corre `03-create-tunnel-user.sh`. En una cuenta donde `init` ya se había corrido, basta `AWS_PROFILE=<admin> scripts/03-create-tunnel-user.sh`. Requiere `session-manager-plugin` en la máquina local (Arch: `aws-session-manager-plugin`, AUR). Guía completa en [`docs/db-access.md`](../../docs/db-access.md).
+
+**Por qué un usuario aparte (`nequi-tunnel`) y no el deployer:** el túnel necesita otros permisos (EC2 acotada por tag, SSM, leer el secret) y el deployer ya es amplio. Su política (`policies/tunnel-policy.json`) solo deja lanzar y terminar instancias con tag `nequi-*-db-bastion`, pasar el rol `nequi-db-bastion` a EC2, abrir sesión SSM a ese bastion y leer `nequi-*/db`. **No tiene permisos de IAM para crear roles**: el rol y el instance profile los crea `03` una sola vez con admin. Si el usuario del túnel pudiera crear roles, podría crearse uno con `AdministratorAccess` y lanzar una EC2 con él.
+
+**Riesgos:**
+- La EC2 está fuera del state de Terraform y su ENI vive en el SG y la subnet que Terraform administra. Por eso `destroy.sh` la termina antes de destruir. Si `start-tunnel.sh` muere sin limpiar (`kill -9`), volver a correrlo la barre al arrancar.
+- El rol `nequi-db-bastion` persiste entre corridas. Solo tiene SSM y no cuesta nada. Lo borra `99-destroy-deployer.sh`.
+- El archivo de la contraseña vive en `/tmp` hasta que el script sale. Si muere con `SIGKILL` queda ahí (`0600`, y `/tmp` suele ser tmpfs: se borra al reiniciar).
+- Hay un perfil más en `~/.aws/credentials` (`nequi-tunnel`) y una access key más que cuidar.
+- En `prod` el túnel da acceso a la base real.
+
+La contraseña también se puede leer a mano del secret `<name>/db` de Secrets Manager:
 
 ```bash
 aws secretsmanager get-secret-value --secret-id nequi-dev/db --query SecretString --output text
@@ -214,7 +241,7 @@ scripts/destroy.sh dev
 scripts/destroy.sh staging
 scripts/destroy.sh prod
 scripts/destroy.sh bootstrap        # se niega si algún environment aún tiene recursos
-scripts/99-destroy-deployer.sh      # opcional: borra el usuario deployer
+scripts/99-destroy-deployer.sh      # opcional: borra el deployer, el usuario del túnel y el rol del bastion
 ```
 
 Después, revisar en la consola que no queden un NAT gateway, una Elastic IP o un ALB.
