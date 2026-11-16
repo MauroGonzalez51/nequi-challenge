@@ -3,6 +3,9 @@
         "esbenp.prettier-vscode",
         "YoavBls.pretty-ts-errors",
         "dbaeumer.vscode-eslint",
-        "moonrepo.moon-console"
+        "moonrepo.moon-console",
+        "vscjava.vscode-gradle",
+        "SonarSource.sonarlint-vscode",
+        "redhat.java"
     ]
 }
