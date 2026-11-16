@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,6 +18,7 @@ import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.dto.request.AddProductRequest;
 import co.com.bancolombia.api.dto.request.PatchProductStockRequest;
 import co.com.bancolombia.api.exception.ErrorMapper;
+import co.com.bancolombia.model.exception.DataConflictException;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.model.product.Product;
@@ -161,6 +163,22 @@ class ProductHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Branch not found");
+    }
+
+    @Test
+    void shouldReturnConflictWhenBranchIsRemovedDuringTheWrite() {
+        when(addProductUseCase.execute(1L, "Arepa", 5))
+                .thenReturn(Mono.error(new DataConflictException("conflict", new IllegalStateException("fk"))));
+
+        webTestClient.post()
+                .uri("/api/branches/1/products")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new AddProductRequest("Arepa", 5))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("conflict")
+                .jsonPath("$.errorCode").isEqualTo("DATA_CONFLICT");
     }
 
     @Test

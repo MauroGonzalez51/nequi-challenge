@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -17,6 +18,7 @@ import co.com.bancolombia.api.dto.request.PatchNameRequest;
 import co.com.bancolombia.api.exception.ErrorMapper;
 import co.com.bancolombia.api.dto.request.AddBranchRequest;
 import co.com.bancolombia.model.branch.Branch;
+import co.com.bancolombia.model.exception.DataConflictException;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ValidationException;
 import co.com.bancolombia.usecase.addbranch.AddBranchUseCase;
@@ -148,6 +150,22 @@ class BranchHandlerTest {
                 .expectStatus().isNotFound()
                 .expectBody()
                 .jsonPath("$.message").isEqualTo("Franchise not found");
+    }
+
+    @Test
+    void shouldReturnConflictWhenFranchiseIsRemovedDuringTheWrite() {
+        when(addBranchUseCase.execute(1L, "Cartagena"))
+                .thenReturn(Mono.error(new DataConflictException("conflict", new IllegalStateException("fk"))));
+
+        webTestClient.post()
+                .uri("/api/franchises/1/branches")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(new AddBranchRequest("Cartagena"))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+                .expectBody()
+                .jsonPath("$.message").isEqualTo("conflict")
+                .jsonPath("$.errorCode").isEqualTo("DATA_CONFLICT");
     }
 
     @Test
