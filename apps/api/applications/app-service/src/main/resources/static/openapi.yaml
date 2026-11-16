@@ -16,7 +16,9 @@ info:
     **Errors** always come as `{ "message": "...", "errorCode": "..." }`.
     `message` is for people and its text may change. `errorCode` is stable and meant for
     clients to branch on (see the `ErrorResponse` schema for the full list).
-    `400` for a bad request, `404` when the franchise, branch or product does not exist, and
+    `400` for a bad request, `404` when the franchise, branch or product does not exist,
+    `409` when a write clashes with the current state of the data (for example the parent was
+    removed while the request was running), and
     `503` when the database is unavailable (unreachable, too slow, or cut off by the circuit
     breaker). A `503` never includes internal details.
 
@@ -286,6 +288,8 @@ paths:
                     errorCode: INVALID_REQUEST
         '404':
           $ref: '#/components/responses/FranchiseNotFound'
+        '409':
+          $ref: '#/components/responses/DataConflict'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
@@ -440,6 +444,8 @@ paths:
                     errorCode: INVALID_REQUEST
         '404':
           $ref: '#/components/responses/BranchNotFound'
+        '409':
+          $ref: '#/components/responses/DataConflict'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
@@ -687,6 +693,18 @@ components:
           example:
             message: Product not found
             errorCode: RECORD_NOT_FOUND
+    DataConflict:
+      description: |
+        The write clashes with the current state of the data, for example the parent record was
+        removed while the request was running. It is not retried. Read the state again and decide.
+        The message never carries internal details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: The operation conflicts with the current state of the data
+            errorCode: DATA_CONFLICT
     ServiceUnavailable:
       description: |
         The database is not usable right now: unreachable, too slow, or cut off by the circuit
@@ -833,6 +851,7 @@ components:
             | `VALIDATION_ERROR` | 400 | A value breaks a business rule (blank name, negative stock) |
             | `INVALID_REQUEST` | 400 | A required field or body is missing, or an id is not a number |
             | `INVALID_BODY` | 400 | The body is not valid JSON, or a field has the wrong type |
+            | `DATA_CONFLICT` | 409 | The write clashes with the current state of the data |
             | `SERVICE_UNAVAILABLE` | 503 | The database is not usable right now |
             | `INTERNAL_ERROR` | 500 | Unexpected error. The message never carries details |
           enum:
@@ -840,6 +859,7 @@ components:
             - VALIDATION_ERROR
             - INVALID_REQUEST
             - INVALID_BODY
+            - DATA_CONFLICT
             - SERVICE_UNAVAILABLE
             - INTERNAL_ERROR
           example: RECORD_NOT_FOUND

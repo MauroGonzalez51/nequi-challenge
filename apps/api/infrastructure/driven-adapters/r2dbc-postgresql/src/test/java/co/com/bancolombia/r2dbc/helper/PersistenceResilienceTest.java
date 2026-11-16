@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DataIntegrityViolationException;
 
+import co.com.bancolombia.model.exception.DataConflictException;
 import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.r2dbc.config.PersistenceResilienceProperties;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -73,14 +74,16 @@ class PersistenceResilienceTest {
     }
 
     @Test
-    void shouldNotRetryAnErrorThatIsNotAnInfrastructureFailure() {
+    void shouldNotRetryAnIntegrityViolationAndFailAsDataConflict() {
         AtomicInteger calls = new AtomicInteger();
 
         StepVerifier.create(resilience.read(() -> {
             calls.incrementAndGet();
             return Mono.<String>error(new DataIntegrityViolationException("duplicate"));
         }))
-                .expectError(DataIntegrityViolationException.class)
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(DataConflictException.class)
+                        .hasCauseInstanceOf(DataIntegrityViolationException.class))
                 .verify(WAIT);
 
         assertThat(calls).hasValue(1);
@@ -167,7 +170,7 @@ class PersistenceResilienceTest {
     void shouldNotOpenTheCircuitForErrorsThatAreNotInfrastructureFailures() {
         for (int i = 0; i < 5; i++) {
             StepVerifier.create(resilience.write(() -> Mono.<String>error(new DataIntegrityViolationException("dup"))))
-                    .expectError(DataIntegrityViolationException.class)
+                    .expectError(DataConflictException.class)
                     .verify(WAIT);
         }
 

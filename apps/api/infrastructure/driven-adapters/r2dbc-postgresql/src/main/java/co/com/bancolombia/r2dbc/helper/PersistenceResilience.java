@@ -2,8 +2,10 @@ package co.com.bancolombia.r2dbc.helper;
 
 import java.util.function.Supplier;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
+import co.com.bancolombia.model.exception.DataConflictException;
 import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.r2dbc.config.PersistenceResilienceProperties;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -26,7 +28,8 @@ import reactor.util.retry.Retry;
  * Whatever ends up failing because the database is not usable (open circuit,
  * timeout, connection errors, retries spent) leaves as a domain
  * ServiceUnavailableException, so upper layers never see persistence or
- * Resilience4j types. Other errors, like a duplicate key, pass through as is.
+ * Resilience4j types. A violated integrity rule (like a bad foreign key) leaves as a domain
+ * DataConflictException; it is not retried and does not count against the breaker. Other errors pass through as is.
  *
  * Every method takes a Supplier so each attempt calls the repository again
  * (Mono.defer); retrying an already built Mono would not re-run the call.
@@ -82,7 +85,10 @@ public class PersistenceResilience {
                 .onErrorMap(CallNotPermittedException.class,
                         error -> new ServiceUnavailableException("Database circuit breaker is open", error))
                 .onErrorMap(PersistenceFailures::isInfrastructureFailure,
-                        error -> new ServiceUnavailableException("Database is unavailable", error));
+                        error -> new ServiceUnavailableException("Database is unavailable", error))
+                .onErrorMap(DataIntegrityViolationException.class,
+                        error -> new DataConflictException(
+                                "The operation conflicts with the current state of the data", error));
     }
 
     // maxAttempts counts the first call too, so retries = maxAttempts - 1.

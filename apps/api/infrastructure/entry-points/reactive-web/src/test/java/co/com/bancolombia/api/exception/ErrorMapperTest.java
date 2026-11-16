@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
 
 import co.com.bancolombia.api.dto.response.ErrorResponse;
+import co.com.bancolombia.model.exception.DataConflictException;
 import co.com.bancolombia.model.exception.RecordNotFoundException;
 import co.com.bancolombia.model.exception.ServiceUnavailableException;
 import co.com.bancolombia.model.exception.ValidationException;
@@ -45,6 +46,15 @@ class ErrorMapperTest {
         StepVerifier.create(errorMapper.toResponse(new ServerWebInputException("bad")))
                 .expectNextMatches(response -> hasError(response, HttpStatus.BAD_REQUEST,
                         "Invalid Request Body", "INVALID_BODY"))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldMapDataConflictToConflict() {
+        StepVerifier.create(errorMapper.toResponse(
+                new DataConflictException("conflict", new IllegalStateException("fk"))))
+                .expectNextMatches(response -> hasError(response, HttpStatus.CONFLICT,
+                        "conflict", "DATA_CONFLICT"))
                 .verifyComplete();
     }
 
