@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 @Getter
+// Required: ObjectMapperImp fills the model through setters when mapping entity -> model.
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor

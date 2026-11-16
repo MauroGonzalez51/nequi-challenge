@@ -11,9 +11,15 @@ import co.com.bancolombia.api.handlers.ProductHandler;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
+/**
+ * Routes only: each path points to a handler method and there is no logic here (RouterFunctions, no @RestController).
+ */
 public class RouterRest {
 
     @Bean
+    /**
+     * Franchise: create, rename, and top-stock product of each branch.
+     */
     public RouterFunction<ServerResponse> franchiseRoutes(FranchiseHandler handler) {
         return route()
                 .path("/api/franchises",
@@ -25,6 +31,9 @@ public class RouterRest {
     }
 
     @Bean
+    /**
+     * Branch: create under a franchise, and rename.
+     */
     public RouterFunction<ServerResponse> branchRoutes(BranchHandler handler) {
         return route()
                 .path("/api/franchises/{franchiseId}/branches", builder -> builder.POST("", handler::create))
@@ -33,6 +42,9 @@ public class RouterRest {
     }
 
     @Bean
+    /**
+     * Product: create and delete under a branch, and change stock or name.
+     */
     public RouterFunction<ServerResponse> productRoutes(ProductHandler handler) {
         return route()
                 .path("/api/branches",

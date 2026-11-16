@@ -16,6 +16,10 @@ import co.com.bancolombia.usecase.removeproduct.RemoveProductUseCase;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * Product endpoints.
+ * Every chain ends in onErrorResume(errorMapper::toResponse): errors become HTTP responses in one place.
+ */
 @Component
 @RequiredArgsConstructor
 public class ProductHandler {
@@ -25,6 +29,10 @@ public class ProductHandler {
     private final PatchProductNameUseCase patchProductNameUseCase;
     private final ErrorMapper errorMapper;
 
+    /**
+     * POST: validates the body, then the path id, creates, and answers 201 with a Location header
+     * pointing to the new resource.
+     */
     public Mono<ServerResponse> create(ServerRequest request) {
         return RequestParams.body(request, AddProductRequest.class)
                 .flatMap(body -> RequestParams.branchId(request)
@@ -37,6 +45,9 @@ public class ProductHandler {
                 .onErrorResume(this.errorMapper::toResponse);
     }
 
+    /**
+     * DELETE: both ids are read together (Mono.zip). The use case returns Mono<Void>, so then() supplies the 204.
+     */
     public Mono<ServerResponse> delete(ServerRequest request) {
         return Mono.zip(RequestParams.branchId(request),
                 RequestParams.productId(request))
@@ -45,6 +56,9 @@ public class ProductHandler {
                 .onErrorResume(this.errorMapper::toResponse);
     }
 
+    /**
+     * PATCH: body is checked before the path id. Answers 200 with the stored resource.
+     */
     public Mono<ServerResponse> patchStock(ServerRequest request) {
         return RequestParams.body(request, PatchProductStockRequest.class)
                 .flatMap(body -> RequestParams.productId(request)
@@ -54,6 +68,9 @@ public class ProductHandler {
                 .onErrorResume(this.errorMapper::toResponse);
     }
 
+    /**
+     * PATCH: body is checked before the path id. Answers 200 with the stored resource.
+     */
     public Mono<ServerResponse> patchName(ServerRequest request) {
         return RequestParams.body(request, PatchNameRequest.class)
                 .flatMap(body -> RequestParams.productId(request)

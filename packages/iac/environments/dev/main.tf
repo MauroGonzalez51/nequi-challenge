@@ -1,6 +1,9 @@
+# main.tf, variables.tf and outputs.tf are identical in dev, staging and prod. Only backend.tf (the state key)
+# and the .tfvars change, so comparing two environments is a short, readable diff.
 provider "aws" {
   region = var.region
 
+  # Tags every resource, so the console and the bill can be filtered by project and environment.
   default_tags {
     tags = {
       Project     = "nequi-challenge"
@@ -17,6 +20,8 @@ locals {
   log_group_name = "/ecs/${local.name}-api"
 }
 
+# This file only wires modules together: each one gets the outputs of the previous ones.
+# Terraform orders creation from those references (network, then ecr and database, then iam, alb, ecs).
 module "network" {
   source = "../../modules/network"
 
@@ -38,6 +43,7 @@ module "database" {
   multi_az           = var.multi_az
 }
 
+# iam is handed the exact secret and log group, so the roles can be limited to just those.
 module "iam" {
   source = "../../modules/iam"
 

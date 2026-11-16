@@ -22,6 +22,9 @@ public class BranchRepositoryAdapter
     }
 
     @Override
+    /**
+     * Branches of a franchise in id order (the order the top-stock endpoint relies on).
+     */
     public Flux<Branch> findByFranchiseId(Long franchiseId) {
         return this.resilience.readMany(() -> this.repository.findByFranchiseIdOrderByIdAsc(franchiseId))
                 .map(this::toEntity);

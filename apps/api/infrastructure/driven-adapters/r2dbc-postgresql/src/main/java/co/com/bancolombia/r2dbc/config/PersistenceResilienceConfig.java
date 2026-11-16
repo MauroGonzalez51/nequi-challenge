@@ -12,6 +12,9 @@ public class PersistenceResilienceConfig {
 
     public static final String CIRCUIT_BREAKER_NAME = "persistence";
 
+    /**
+     * Circuit breaker shared by every database call. Its numbers come from application.yaml.
+     */
     @Bean
     public CircuitBreaker persistenceCircuitBreaker(PersistenceResilienceProperties properties) {
         PersistenceResilienceProperties.Breaker breaker = properties.circuitBreaker();
@@ -22,6 +25,7 @@ public class PersistenceResilienceConfig {
                 .minimumNumberOfCalls(breaker.minimumNumberOfCalls())
                 .waitDurationInOpenState(breaker.waitDurationInOpenState())
                 .permittedNumberOfCallsInHalfOpenState(breaker.permittedNumberOfCallsInHalfOpenState())
+                // Only infrastructure failures count. A duplicate key, or any other answer from the database, must not open the circuit.
                 .recordException(PersistenceFailures::isInfrastructureFailure)
                 .build();
 

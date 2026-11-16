@@ -16,6 +16,9 @@ public final class PersistenceFailures {
     private PersistenceFailures() {
     }
 
+    /**
+     * True for lost connections, transient driver errors and timeouts.
+     */
     public static boolean isInfrastructureFailure(Throwable error) {
         return error instanceof DataAccessResourceFailureException
                 || error instanceof TransientDataAccessException

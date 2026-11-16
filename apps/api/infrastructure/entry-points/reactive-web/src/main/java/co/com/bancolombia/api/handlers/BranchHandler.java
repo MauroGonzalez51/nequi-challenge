@@ -13,6 +13,10 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+/**
+ * Branch endpoints.
+ * Every chain ends in onErrorResume(errorMapper::toResponse): errors become HTTP responses in one place.
+ */
 @Component
 @RequiredArgsConstructor
 public class BranchHandler {
@@ -20,6 +24,10 @@ public class BranchHandler {
     private final PatchBranchNameUseCase patchBranchNameUseCase;
     private final ErrorMapper errorMapper;
 
+    /**
+     * POST: validates the body, then the path id, creates, and answers 201 with a Location header
+     * pointing to the new resource.
+     */
     public Mono<ServerResponse> create(ServerRequest request) {
         return RequestParams.body(request, AddBranchRequest.class)
                 .flatMap(body -> RequestParams.franchiseId(request)
@@ -32,6 +40,9 @@ public class BranchHandler {
                 .onErrorResume(this.errorMapper::toResponse);
     }
 
+    /**
+     * PATCH: body is checked before the path id. Answers 200 with the stored resource.
+     */
     public Mono<ServerResponse> patchName(ServerRequest request) {
         return RequestParams.body(request, PatchNameRequest.class)
                 .flatMap(body -> RequestParams.branchId(request)

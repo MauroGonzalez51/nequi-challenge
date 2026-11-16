@@ -11,6 +11,10 @@ import reactor.core.publisher.Mono;
 public class PatchProductStockUseCase {
     private final ProductRepository repository;
 
+    /**
+     * Sets the stock of a product. Validates the stock (null, then below 0) and the id, loads the product,
+     * and saves only when the value really changes (same value: returns the stored product, no UPDATE).
+     */
     public Mono<Product> execute(Long productId, Integer stock) {
         return Mono.justOrEmpty(stock)
                 .switchIfEmpty(
@@ -23,6 +27,7 @@ public class PatchProductStockUseCase {
                                 .switchIfEmpty(Mono.error(() -> new ValidationException("Product id cannot be null")))
                                 .flatMap(this.repository::findById)
                                 .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Product not found"))))
+                // filter() turns "same stock" into an empty Mono, so save() is skipped and switchIfEmpty returns the stored entity.
                 .flatMap(existing -> Mono.just(existing)
                         .filter(product -> !stock.equals(product.getStock()))
                         .map(product -> product.toBuilder().stock(stock).build())

@@ -11,6 +11,10 @@ import reactor.core.publisher.Mono;
 public class PatchBranchNameUseCase {
     private final BranchRepository repository;
 
+    /**
+     * Renames a branch. Validates the new name (null, then blank) and the id, loads the branch, and saves only
+     * when the name really changes. Same name: returns the stored branch untouched, skipping a useless UPDATE.
+     */
     public Mono<Branch> execute(Long id, String name) {
         return Mono.justOrEmpty(name)
                 .switchIfEmpty(Mono.error(() -> new ValidationException("Branch name cannot be null")))
@@ -25,6 +29,7 @@ public class PatchBranchNameUseCase {
                                 .switchIfEmpty(Mono.error(
                                         () -> new RecordNotFoundException(
                                                 "Branch not found"))))
+                // filter() turns "same name" into an empty Mono, so save() is skipped and switchIfEmpty returns the stored entity.
                 .flatMap(existing -> Mono.just(existing)
                         .filter(branch -> !name.equals(branch.getName()))
                         .map(branch -> branch.toBuilder().name(name).build())

@@ -11,6 +11,10 @@ import reactor.core.publisher.Mono;
 public class PatchFranchiseNameUseCase {
     private final FranchiseRepository repository;
 
+    /**
+     * Renames a franchise. Validates the new name (null, then blank) and the id, loads the franchise, and saves only
+     * when the name really changes. Same name: returns the stored franchise untouched, skipping a useless UPDATE.
+     */
     public Mono<Franchise> execute(Long id, String name) {
         return Mono.justOrEmpty(name)
                 .switchIfEmpty(Mono.error(() -> new ValidationException("Franchise name cannot be null")))
@@ -21,6 +25,7 @@ public class PatchFranchiseNameUseCase {
                                 .switchIfEmpty(Mono.error(() -> new ValidationException("Franchise id cannot be null")))
                                 .flatMap(this.repository::findById)
                                 .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Franchise not found"))))
+                // filter() turns "same name" into an empty Mono, so save() is skipped and switchIfEmpty returns the stored entity.
                 .flatMap(existing -> Mono.just(existing)
                         .filter(franchise -> !name.equals(franchise.getName()))
                         .map(franchise -> franchise.toBuilder().name(name).build())

@@ -15,11 +15,14 @@ resource "aws_ecs_cluster" "this" {
 resource "aws_ecs_task_definition" "this" {
   family                   = "${var.name}-api"
   requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = var.cpu
-  memory                   = var.memory
-  execution_role_arn       = var.execution_role_arn
-  task_role_arn            = var.task_role_arn
+  # Fargate requires awsvpc: each task gets its own network interface and security group.
+  network_mode = "awsvpc"
+  cpu          = var.cpu
+  memory       = var.memory
+  # Two roles on purpose. Execution role: the ECS agent (pull image, read secret, write logs).
+  # Task role: the identity of the application code, empty here.
+  execution_role_arn = var.execution_role_arn
+  task_role_arn      = var.task_role_arn
 
   container_definitions = jsonencode([
     {
@@ -76,6 +79,7 @@ resource "aws_ecs_service" "this" {
     container_port   = var.app_port
   }
 
+  # The target group must be attached to a listener before the service can register tasks in it.
   depends_on = [var.listener_arn]
 
   # Autoscaling changes desired_count at runtime; do not fight it on apply.
@@ -84,6 +88,7 @@ resource "aws_ecs_service" "this" {
   }
 }
 
+# Registers the service with Application Auto Scaling. min and max bound what the policy below may do.
 resource "aws_appautoscaling_target" "this" {
   service_namespace  = "ecs"
   scalable_dimension = "ecs:service:DesiredCount"
@@ -92,6 +97,8 @@ resource "aws_appautoscaling_target" "this" {
   max_capacity       = var.max_capacity
 }
 
+# Target tracking: adds tasks when average CPU is above cpu_target and removes them when it is below.
+# No alarms or step thresholds to tune by hand.
 resource "aws_appautoscaling_policy" "cpu" {
   name               = "${var.name}-cpu-target"
   policy_type        = "TargetTrackingScaling"

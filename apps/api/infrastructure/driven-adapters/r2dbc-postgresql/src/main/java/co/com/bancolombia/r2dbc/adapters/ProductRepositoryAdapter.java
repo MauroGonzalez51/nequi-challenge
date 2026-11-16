@@ -22,12 +22,18 @@ public class ProductRepositoryAdapter
     }
 
     @Override
+    /**
+     * Highest stock first; ties go to the lowest id, so the answer is always the same.
+     */
     public Mono<Product> findTopByBranchId(Long branchId) {
         return this.resilience.read(() -> this.repository.findFirstByBranchIdOrderByStockDescIdAsc(branchId))
                 .map(this::toEntity);
     }
 
     @Override
+    /**
+     * A write: timeout and breaker, never retried.
+     */
     public Mono<Void> deleteById(Long id) {
         return this.resilience.write(() -> this.repository.deleteById(id));
     }

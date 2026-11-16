@@ -21,6 +21,10 @@ import reactor.core.publisher.Mono;
 @Component
 public class ErrorMapper {
 
+    /**
+     * The first onErrorResume whose type matches wins, so specific errors go first and the catch-all (500) last.
+     * Mono.<ServerResponse>error(error) only starts a chain, so onErrorResume can pick the response by error type.
+     */
     public Mono<ServerResponse> toResponse(Throwable error) {
         return Mono.<ServerResponse>error(error)
                 .onErrorResume(RecordNotFoundException.class,
@@ -45,6 +49,9 @@ public class ErrorMapper {
                 });
     }
 
+    /**
+     * Same body for every error: a message and a stable code the client can switch on.
+     */
     private Mono<ServerResponse> respond(HttpStatus status, String message, String errorCode) {
         return ServerResponse.status(status).bodyValue(new ErrorResponse(message, errorCode));
     }

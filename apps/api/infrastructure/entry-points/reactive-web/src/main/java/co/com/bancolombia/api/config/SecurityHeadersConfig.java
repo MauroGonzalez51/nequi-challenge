@@ -7,6 +7,10 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+/**
+ * Adds the same security headers to every response. Strict-Transport-Security only takes effect over HTTPS:
+ * the dev ALB is HTTP-only, so browsers ignore it there.
+ */
 @Component
 public class SecurityHeadersConfig implements WebFilter {
 

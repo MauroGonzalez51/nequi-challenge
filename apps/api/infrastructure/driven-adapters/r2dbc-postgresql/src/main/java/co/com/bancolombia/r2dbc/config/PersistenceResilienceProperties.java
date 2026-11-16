@@ -10,13 +10,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  */
 @ConfigurationProperties(prefix = "resilience.persistence")
 public record PersistenceResilienceProperties(
+        // Per attempt, not for the whole operation: retries add up.
         Duration timeout,
         Retry retry,
         Breaker circuitBreaker) {
 
+    /**
+     * maxAttempts includes the first call. backoff is the first wait; later waits grow exponentially.
+     */
     public record Retry(int maxAttempts, Duration backoff) {
     }
 
+    /**
+     * Opens when failureRateThreshold % of the last slidingWindowSize calls failed (judged only after
+     * minimumNumberOfCalls). After waitDurationInOpenState it lets permittedNumberOfCallsInHalfOpenState
+     * calls through to test whether the database recovered.
+     */
     public record Breaker(
             float failureRateThreshold,
             int slidingWindowSize,

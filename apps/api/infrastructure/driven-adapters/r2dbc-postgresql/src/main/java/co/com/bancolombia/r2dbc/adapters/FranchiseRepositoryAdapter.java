@@ -16,6 +16,7 @@ public class FranchiseRepositoryAdapter
 
     public FranchiseRepositoryAdapter(FranchiseEntityRepository repository, ObjectMapper mapper,
             PersistenceResilience resilience) {
+        // Third argument is the entity -> model conversion. The model needs setters for it to work.
         super(repository, mapper, data -> mapper.map(data, Franchise.class), resilience);
     }
 }

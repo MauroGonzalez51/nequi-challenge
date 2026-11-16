@@ -5,6 +5,7 @@ resource "aws_lb" "this" {
   subnets            = var.public_subnet_ids
   security_groups    = [var.alb_sg_id]
 
+  # Drops requests with malformed headers at the ALB instead of passing them to the app.
   drop_invalid_header_fields = true
 }
 
@@ -20,10 +21,12 @@ resource "aws_lb_target_group" "this" {
   deregistration_delay = 30
 
   health_check {
-    path                = var.health_check_path
-    matcher             = "200"
-    interval            = 15
-    timeout             = 5
+    path = var.health_check_path
+    # Only a 200 counts as healthy: Actuator answers 503 when it reports DOWN.
+    matcher  = "200"
+    interval = 15
+    timeout  = 5
+    # Joins after 2 passing checks (about 30s) and leaves after 3 failing ones (about 45s).
     healthy_threshold   = 2
     unhealthy_threshold = 3
   }

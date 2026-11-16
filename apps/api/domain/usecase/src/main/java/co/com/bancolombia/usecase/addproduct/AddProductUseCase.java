@@ -13,10 +13,16 @@ public class AddProductUseCase {
     private final BranchRepository branchRepository;
     private final ProductRepository productRepository;
 
+    /**
+     * Creates a product under an existing branch.
+     * Checks in order, first failure wins: blank name, stock below 0, null branch id (all 400), then
+     * branch not found (404). The product is built from the arguments plus the stored branch id.
+     */
     public Mono<Product> execute(Long branchId, String name, Integer stock) {
         return Mono.justOrEmpty(name).filter(value -> !value.isBlank())
                 .switchIfEmpty(Mono
                         .error(() -> new ValidationException("Product name must not be blank")))
+                // Each .then() chains the next check after the previous one passed (see AddBranchUseCase).
                 .then(Mono.justOrEmpty(stock).filter(value -> value >= 0).switchIfEmpty(
                         Mono.error(() -> new ValidationException(
                                 "Product stock must be greater than or equal to 0"))))

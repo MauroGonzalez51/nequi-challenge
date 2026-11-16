@@ -10,6 +10,9 @@ import reactor.core.publisher.Mono;
 public class CreateFranchiseUseCase {
     private final FranchiseRepository repository;
 
+    /**
+     * Creates a franchise. Only rule: the name must not be null or blank (400).
+     */
     public Mono<Franchise> execute(String name) {
         return Mono.justOrEmpty(name)
                 .filter(value -> !value.isBlank())

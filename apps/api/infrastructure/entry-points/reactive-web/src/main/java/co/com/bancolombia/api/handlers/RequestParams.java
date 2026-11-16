@@ -36,6 +36,10 @@ final class RequestParams {
         return id(request, PRODUCT_ID, "Product id");
     }
 
+    /**
+     * Reads the JSON body and validates it. A request with no body arrives as an empty Mono, so it is turned
+     * into an explicit 400.
+     */
     static <T> Mono<T> body(ServerRequest request, Class<T> type) {
         return request.bodyToMono(type)
                 .switchIfEmpty(Mono.error(() -> new InvalidRequestException(BODY_REQUIRED)))
@@ -54,6 +58,8 @@ final class RequestParams {
                 .defaultIfEmpty(body);
     }
 
+    // fromCallable runs the parse inside the chain, so a bad id becomes an error signal (400) instead of an
+    // exception thrown out of the handler.
     private static Mono<Long> id(ServerRequest request, String name, String label) {
         return Mono.fromCallable(() -> Long.valueOf(request.pathVariable(name)))
                 .onErrorMap(NumberFormatException.class,

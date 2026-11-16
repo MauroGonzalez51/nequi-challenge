@@ -10,6 +10,7 @@ public class ObjectMapperConfig {
 
     @Bean
     public ObjectMapper objectMapper() {
+        // ObjectMapperImp maps through setters: domain models and entities must keep @Setter.
         return new ObjectMapperImp();
     }
 

@@ -10,6 +10,12 @@ import reactor.core.publisher.Mono;
 import java.lang.reflect.ParameterizedType;
 import java.util.function.Function;
 
+/**
+ * Base of the repository adapters. Translates between domain models (E) and R2DBC entities (D) and
+ * sends every database call through PersistenceResilience.
+ * E: domain model. D: entity. I: id type. R: Spring Data repository.
+ * The mapper fills objects through setters, so models and entities both need them.
+ */
 public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudRepository<D, I> & ReactiveQueryByExampleExecutor<D>> {
     protected R repository;
     protected ObjectMapper mapper;
@@ -23,19 +29,26 @@ public abstract class ReactiveAdapterOperations<E, D, I, R extends ReactiveCrudR
         this.repository = repository;
         this.mapper = mapper;
         this.resilience = resilience;
+        // Reads D from the subclass declaration (extends ReactiveAdapterOperations<Franchise, FranchiseEntity, ...>).
+        // Type erasure hides it at runtime otherwise, and toData needs the entity class.
         ParameterizedType genericSuperclass = (ParameterizedType) this.getClass().getGenericSuperclass();
         this.dataClass = (Class<D>) genericSuperclass.getActualTypeArguments()[1];
         this.toEntityFn = toEntityFn;
     }
 
+    // Domain model -> R2DBC entity, before saving.
     protected D toData(E entity) {
         return mapper.map(entity, dataClass);
     }
 
+    // Despite the name, this goes from the R2DBC entity (D) to the domain model (E), using the function
+    // each adapter passes to the constructor.
     protected E toEntity(D data) {
         return data != null ? toEntityFn.apply(data) : null;
     }
 
+    // Saves and maps the stored row back, so generated values (the id) reach the caller.
+    // Goes through write(): timeout and circuit breaker, no retry.
     public Mono<E> save(E entity) {
         return resilience.write(() -> saveData(toData(entity)))
                 .map(this::toEntity);

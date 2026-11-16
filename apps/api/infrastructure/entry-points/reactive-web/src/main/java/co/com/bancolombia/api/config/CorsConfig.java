@@ -16,6 +16,7 @@ public class CorsConfig {
     @Bean
     CorsWebFilter corsWebFilter(@Value("${cors.allowed-origins}") List<String> origins) {
         CorsConfiguration config = new CorsConfiguration();
+        // With credentials the browser rejects "*" as origin, so the origins are an explicit list (cors.allowed-origins).
         config.setAllowCredentials(Boolean.TRUE);
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(Arrays.asList("POST", "GET", "DELETE", "PUT", "PATCH"));

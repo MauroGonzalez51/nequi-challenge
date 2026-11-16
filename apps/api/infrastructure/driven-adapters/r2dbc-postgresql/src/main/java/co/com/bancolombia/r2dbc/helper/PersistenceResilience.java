@@ -42,25 +42,41 @@ public class PersistenceResilience {
         this.properties = properties;
     }
 
+    /**
+     * One value: timeout per attempt, then retries, all inside the circuit breaker.
+     */
     public <T> Mono<T> read(Supplier<Mono<T>> call) {
         return withCircuitBreaker(Mono.defer(call)
                 .timeout(properties.timeout())
                 .retryWhen(retrySpec()));
     }
 
+    /**
+     * Many values. Collected to a list first, so a retry re-runs the whole query instead of resuming a
+     * half-emitted stream.
+     */
     public <T> Flux<T> readMany(Supplier<Flux<T>> call) {
         return read(() -> call.get().collectList()).flatMapIterable(items -> items);
     }
 
+    /**
+     * One value, no retry (see class doc).
+     */
     public <T> Mono<T> write(Supplier<Mono<T>> call) {
         return withCircuitBreaker(Mono.defer(call)
                 .timeout(properties.timeout()));
     }
 
+    /**
+     * Like readMany, without retry.
+     */
     public <T> Flux<T> writeMany(Supplier<Flux<T>> call) {
         return write(() -> call.get().collectList()).flatMapIterable(items -> items);
     }
 
+    /**
+     * Applies the breaker and turns its failures into the domain ServiceUnavailableException.
+     */
     private <T> Mono<T> withCircuitBreaker(Mono<T> call) {
         return call.transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
                 .onErrorMap(CallNotPermittedException.class,
