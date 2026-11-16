@@ -154,3 +154,4 @@ Load only `docs/sparring/next-round.md` when starting a round. Older sessions ar
 - `docs/sparring/next-round.md`: what is pending now. Rewritten after every session, it does not grow.
 - `docs/sparring/session-1.md`: resilience order, `switchIfEmpty`, `concatMap`, layers, Terraform state, Lombok, testing tools.
 - `docs/sparring/session-2.md`: `zip` vs `merge`, multi-stage Docker, IAM roles, Auto Scaling, SOLID, sealed classes.
+- `docs/sparring/session-3.md`: `Mono.error` lazy, `flatMapSequential` vs pool, `transformDeferred`, `DataConflictException` (409), IAM `*`, multi-stage Docker.
