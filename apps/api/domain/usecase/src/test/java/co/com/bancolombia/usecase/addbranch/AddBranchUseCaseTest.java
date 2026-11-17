@@ -46,6 +46,18 @@ class AddBranchUseCaseTest {
     }
 
     @Test
+    void shouldTrimNameBeforeSaving() {
+        Franchise franchise = Franchise.builder().id(1L).name("Nequi").build();
+
+        when(franchiseRepository.findById(1L)).thenReturn(Mono.just(franchise));
+        when(branchRepository.save(any(Branch.class))).thenAnswer(call -> Mono.just(call.getArgument(0)));
+
+        StepVerifier.create(useCase.execute(1L, "  Cartagena  "))
+                .expectNextMatches(saved -> saved.getName().equals("Cartagena"))
+                .verifyComplete();
+    }
+
+    @Test
     void shouldFailWhenNameIsBlank() {
         StepVerifier.create(useCase.execute(1L, "   "))
                 .expectError(ValidationException.class)

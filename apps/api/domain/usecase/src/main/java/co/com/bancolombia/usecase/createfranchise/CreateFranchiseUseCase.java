@@ -15,6 +15,7 @@ public class CreateFranchiseUseCase {
      */
     public Mono<Franchise> execute(String name) {
         return Mono.justOrEmpty(name)
+                .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .switchIfEmpty(Mono.error(() -> new ValidationException("Franchise name must not be blank")))
                 .map(value -> Franchise.builder().name(value).build())

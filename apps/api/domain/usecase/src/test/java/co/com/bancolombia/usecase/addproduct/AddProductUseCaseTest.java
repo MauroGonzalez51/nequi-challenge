@@ -59,6 +59,18 @@ class AddProductUseCaseTest {
     }
 
     @Test
+    void shouldTrimNameBeforeSaving() {
+        Branch branch = Branch.builder().id(1L).name("Cartagena").franchiseId(1L).build();
+
+        when(branchRepository.findById(1L)).thenReturn(Mono.just(branch));
+        when(productRepository.save(any(Product.class))).thenAnswer(call -> Mono.just(call.getArgument(0)));
+
+        StepVerifier.create(useCase.execute(1L, "  Arepa  ", 5))
+                .expectNextMatches(saved -> saved.getName().equals("Arepa"))
+                .verifyComplete();
+    }
+
+    @Test
     void shouldFailWhenNameIsBlank() {
         StepVerifier.create(useCase.execute(1L, "   ", 5))
                 .expectError(ValidationException.class)

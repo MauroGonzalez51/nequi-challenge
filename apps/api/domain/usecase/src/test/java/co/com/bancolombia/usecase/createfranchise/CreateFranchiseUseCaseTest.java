@@ -37,6 +37,15 @@ class CreateFranchiseUseCaseTest {
     }
 
     @Test
+    void shouldTrimNameBeforeSaving() {
+        when(repository.save(any(Franchise.class))).thenAnswer(call -> Mono.just(call.getArgument(0)));
+
+        StepVerifier.create(useCase.execute("  Nequi  "))
+                .expectNextMatches(saved -> saved.getName().equals("Nequi"))
+                .verifyComplete();
+    }
+
+    @Test
     void shouldFailWhenNameIsBlank() {
         StepVerifier.create(useCase.execute("   "))
                 .expectError(ValidationException.class)

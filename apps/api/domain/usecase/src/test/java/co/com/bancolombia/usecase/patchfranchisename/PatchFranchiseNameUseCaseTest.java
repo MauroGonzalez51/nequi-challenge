@@ -52,6 +52,27 @@ class PatchFranchiseNameUseCaseTest {
     }
 
     @Test
+    void shouldTrimNameWhenRenaming() {
+        when(repository.findById(10L)).thenReturn(Mono.just(existing));
+        when(repository.save(any(Franchise.class))).thenAnswer(call -> Mono.just(call.getArgument(0)));
+
+        StepVerifier.create(useCase.execute(10L, "  New  "))
+                .expectNextMatches(updated -> updated.getName().equals("New"))
+                .verifyComplete();
+    }
+
+    @Test
+    void shouldDoNothingWhenTrimmedNameIsTheSame() {
+        when(repository.findById(10L)).thenReturn(Mono.just(existing));
+
+        StepVerifier.create(useCase.execute(10L, "  Old  "))
+                .expectNext(existing)
+                .verifyComplete();
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void shouldFailWhenNameIsNull() {
         StepVerifier.create(useCase.execute(10L, null))
                 .expectError(ValidationException.class)

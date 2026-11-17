@@ -15,14 +15,18 @@ public class AddProductUseCase {
 
     /**
      * Creates a product under an existing branch.
-     * Checks in order, first failure wins: blank name, stock below 0, null branch id (all 400), then
-     * branch not found (404). The product is built from the arguments plus the stored branch id.
+     * Checks in order, first failure wins: blank name, stock below 0, null branch
+     * id (all 400), then
+     * branch not found (404). The product is built from the arguments plus the
+     * stored branch id.
      */
     public Mono<Product> execute(Long branchId, String name, Integer stock) {
-        return Mono.justOrEmpty(name).filter(value -> !value.isBlank())
+        return Mono.justOrEmpty(name)
+                .filter(value -> !value.isBlank())
                 .switchIfEmpty(Mono
                         .error(() -> new ValidationException("Product name must not be blank")))
-                // Each .then() chains the next check after the previous one passed (see AddBranchUseCase).
+                // Each .then() chains the next check after the previous one passed (see
+                // AddBranchUseCase).
                 .then(Mono.justOrEmpty(stock).filter(value -> value >= 0).switchIfEmpty(
                         Mono.error(() -> new ValidationException(
                                 "Product stock must be greater than or equal to 0"))))
@@ -32,7 +36,7 @@ public class AddProductUseCase {
                                         "Branch id cannot be null"))))
                 .flatMap(this.branchRepository::findById)
                 .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Branch not found")))
-                .map(branch -> Product.builder().name(name).stock(stock).branchId(branch.getId())
+                .map(branch -> Product.builder().name(name.trim()).stock(stock).branchId(branch.getId())
                         .build())
                 .flatMap(this.productRepository::save);
     }

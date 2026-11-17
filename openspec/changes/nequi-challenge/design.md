@@ -24,11 +24,15 @@ The candidate writes all code; Claude is evaluator and mentor. The repo already 
 
 **Persistence is a candidate choice.** The doc allows MongoDB Atlas, RDS, DynamoDB or Redis. The spec stays store-neutral. Claude recommended DynamoDB or MongoDB Atlas; the final choice is recorded under Open Questions.
 
+**Unique names and name normalization (candidate-added, not in the source doc).** Names are unique per parent: franchise names globally, branch names per franchise, product names per branch. Uniqueness ignores case and surrounding spaces, so `"Pizza"` and `" pizza "` collide. It is enforced by unique indexes in `schema.sql` over `lower(btrim(name))` (composite with `franchise_id` / `branch_id`), the only guarantee that holds under concurrent requests; a check-then-insert in the use case would race. The domain does not re-check: `PersistenceResilience` maps `DataIntegrityViolationException` to the domain `DataConflictException`, and `ErrorMapper` answers 409 `DATA_CONFLICT`. Separately, every use case that writes a name (`CreateFranchise`, `AddBranch`, `AddProduct` and the three `Patch*Name`) trims it after validation, so stored names have no surrounding spaces. The patch use cases carry the trimmed value down with `flatMap` (not `then`, which discards it) so the "same name" check compares trimmed values and skips a useless UPDATE. Alternatives considered: check-then-insert in the use case, rejected as racy and duplicating the rule in two places; a global unique name for branches and products, rejected because the same branch or product name is legitimate in different parents.
+
 ## Risks / Trade-offs
 
 - [Rubric drifts from the source doc] → Specs were written from the full doc text (paragraphs and tables); re-sync if the doc changes.
 - [Grep checks miss edge cases such as `if` inside lambdas that are not reactive flows] → Claude explains each finding and the candidate decides.
 - [Candidate leans on Claude for code] → Protocol above; defense explainability requirement.
+- [Unique-name rule lives in the database, not in a use case] → Accepted: it is a persistence invariant, and the domain only propagates `DataConflictException`. Existing databases with duplicate names make the index creation fail at startup; recreate the data first.
+- [`btrim` strips spaces only, not tabs or newlines] → Acceptable for this challenge; names are trimmed with Java `String.trim()` before saving.
 
 ## Resolved Decisions
 
