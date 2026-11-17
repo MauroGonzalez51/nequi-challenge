@@ -1,11 +1,32 @@
-FROM eclipse-temurin:25-jdk-alpine
-# NOTE: If the Java base image already provides the user and its permissions, remove this line
+# Build context: apps/api  ->  docker build -f deployment/Dockerfile apps/api
+FROM eclipse-temurin:17-jdk-alpine AS build
+
+WORKDIR /workspace
+
+COPY gradlew settings.gradle build.gradle gradle.properties lombok.config ./
+
+COPY gradle gradle
+
+RUN ./gradlew --version --no-daemon
+
+COPY domain domain
+COPY infrastructure infrastructure
+COPY applications applications
+
+RUN ./gradlew bootJar -x test --no-daemon
+
+FROM eclipse-temurin:17-jre-alpine
+
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
-COPY *.jar api.jar
-# NOTE: If the Java base image already provides the user and its permissions, remove this line
-RUN chown -R appuser:appgroup /app
-ENV JAVA_OPTS="-XX:+UseCompactObjectHeaders -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
-# Replace with a non-root user to avoid running the container with excessive privileges
+
+COPY --from=build --chown=appuser:appgroup /workspace/applications/app-service/build/libs/api.jar api.jar
+
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+
 USER appuser
-ENTRYPOINT [ "/bin/sh", "-c", "/opt/java/openjdk/bin/java $JAVA_OPTS  -jar /app/api.jar" ]
+
+EXPOSE 8080
+
+ENTRYPOINT ["/bin/sh", "-c", "exec java $JAVA_OPTS -jar /app/api.jar"]

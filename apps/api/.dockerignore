@@ -1,0 +1,5 @@
+**/build
+build-cache
+.gradle
+.env
+deployment

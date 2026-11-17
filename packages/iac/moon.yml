@@ -23,5 +23,5 @@ tasks:
         extends: script
 
     destroy-iam:
-        command: scripts/destroy-iam.sh
+        command: scripts/99-destroy-iam.sh
         extends: script
