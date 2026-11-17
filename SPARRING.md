@@ -157,3 +157,5 @@ Load only `docs/sparring/next-round.md` when starting a round. Older sessions ar
 - `docs/sparring/session-3.md`: `Mono.error` lazy, `flatMapSequential` vs pool, `transformDeferred`, `DataConflictException` (409), IAM `*`, multi-stage Docker.
 - `docs/sparring/session-4.md`: `PersistenceResilience` order and writes, worst-case read latency, breaker numbers, resilience tests, `readMany` buffer, `concat` vs `zip`.
 - `docs/sparring/session-5.md`: top-stock and N+1, network path, `StepVerifier`, auth, cold publisher, `@Data`, rollback, integration tests, unique names, blocking in WebFlux.
+- `docs/sparring/session-6.md`: N+1 fix in full, rollback pieces, `@Setter` evidence, `thenAnswer` and no-op tests, latency 6.6s, integration test line by line, unique race and 409 chain, 409 vs breaker, `onError*`, `subscribeOn`/`publishOn`, "one more week".
+- `docs/sparring/session-7.md`: curveballs 12 and 13 again, auth bypass (`internal` ALB, VPC Link, `authenticate-cognito`), rollback with mutable `latest` (N-1 still points to `latest`).
