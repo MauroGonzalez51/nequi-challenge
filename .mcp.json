@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "proto": {
+            "args": ["mcp"],
+            "command": "proto",
+            "env": {},
+            "type": "stdio"
+        }
+    }
+}
