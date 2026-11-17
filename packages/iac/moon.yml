@@ -22,6 +22,6 @@ tasks:
         command: scripts/destroy.sh
         extends: script
 
-    start-tunnel:
-        command: scripts/start-tunnel.sh
+    destroy-iam:
+        command: scripts/destroy-iam.sh
         extends: script

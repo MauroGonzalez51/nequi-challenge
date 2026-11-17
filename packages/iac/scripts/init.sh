@@ -73,4 +73,5 @@ cd "$BOOTSTRAP_DIR"
 terraform init -input=false
 terraform apply -input=false $AUTO_APPROVE
 
-echo ">> Done. Deploy an environment with: scripts/deploy.sh dev"
+echo ">> Done. Now use profile '$PROFILE': export AWS_PROFILE=$PROFILE"
+echo ">> Then deploy an environment with: scripts/deploy.sh dev"

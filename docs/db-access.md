@@ -74,7 +74,7 @@ Los gestores de portapapeles (cliphist, klipper, etc.) guardan historial, a vece
 
 - La EC2 no está en el state de Terraform y su ENI vive en el SG y la subnet que Terraform administra. Si queda viva, `destroy.sh` fallaría con `DependencyViolation`. Por eso `destroy.sh <env>` busca `nequi-<env>-db-bastion` y la termina antes de destruir.
 - Si `start-tunnel.sh` murió sin limpiar (`kill -9`, apagón), volver a correrlo: barre la EC2 anterior del mismo environment al arrancar. O correr `destroy.sh`.
-- El rol `nequi-db-bastion` persiste entre corridas. Es gratis e inofensivo. `99-destroy-deployer.sh` borra el rol, el instance profile y el usuario `nequi-tunnel`.
+- El rol `nequi-db-bastion` persiste entre corridas. Es gratis e inofensivo. `99-destroy-iam.sh` borra el rol, el instance profile y el usuario `nequi-tunnel`.
 - Costo: `t3.nano` cuesta centavos por hora, y solo existe mientras el túnel está abierto.
 - `prod` es la base real: cuidado con escrituras.
 

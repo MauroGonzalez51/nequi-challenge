@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cleanup after the challenge. Run as root or an admin, NOT as the deployer.
-# Deletes every access key, the user, the group policy and the group, plus the tunnel user and bastion role.
+# Deletes the deployer user (keys, group, policy) and the tunnel user, group, bastion role and instance profile.
 # Run `terraform destroy` in every env BEFORE this, or you lose the permissions
 # needed to clean up.
 set -euo pipefail
@@ -33,7 +33,7 @@ aws iam delete-user --user-name "$USER_NAME"
 aws iam delete-group-policy --group-name "$GROUP_NAME" --policy-name "$POLICY_NAME"
 aws iam delete-group --group-name "$GROUP_NAME"
 
-echo "Deployer user and group deleted."
+echo "Deployer user, group and policy deleted."
 
 # --- Tunnel user (03-create-tunnel-user.sh), same order: keys first, then the user. ---
 TUNNEL_USER="${TUNNEL_USER:-nequi-tunnel}"

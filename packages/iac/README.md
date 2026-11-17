@@ -62,6 +62,9 @@ packages/iac/
 #    Con credenciales de admin (no con el perfil nequi-tf).
 AWS_PROFILE=<admin> scripts/init.sh
 
+# Al terminar, usa el perfil del deployer.
+export AWS_PROFILE=nequi-tf
+
 # 2. Desplegar un environment (compila, sube la imagen y aplica Terraform).
 scripts/deploy.sh dev
 
@@ -81,12 +84,12 @@ Los scripts se corren desde `packages/iac`.
 |---|---|---|
 | `scripts/init.sh [--yes]` | Una vez por cuenta | Corre `01`, `02`, `03` y el bootstrap en orden. Salta lo que ya está hecho y avisa si el usuario ya tiene 2 access keys. |
 | `scripts/deploy.sh <env> [--yes]` | Cada deploy | Compila el jar, crea el repo ECR, construye y sube la imagen, aplica Terraform y fuerza el rollout de ECS. Espera a que el service estabilice e imprime el health. |
-| `scripts/destroy.sh <env\|bootstrap> [--yes]` | Al terminar | Destruye un environment, o el bootstrap. Antes termina el bastion del túnel si quedó vivo. El bootstrap se niega si algún environment aún tiene recursos. |
+| `scripts/destroy.sh <env\|bootstrap> [--yes]` | Al terminar | Destruye un environment, o el bootstrap. Antes termina el bastion del túnel si quedó vivo. El bootstrap se niega si algún environment aún tiene recursos, y no borra los usuarios IAM: eso lo hace `99-destroy-iam.sh` con perfil admin. |
 | `scripts/01-create-deployer.sh` | Una vez por cuenta | Crea grupo, política y usuario IAM `terraform-deployer`. Idempotente. |
 | `scripts/02-create-access-key.sh` | Una vez por máquina | Crea una access key y la guarda en el perfil local `nequi-tf`. No imprime el secret. |
 | `scripts/03-create-tunnel-user.sh` | Una vez por cuenta | Con admin. Crea el rol `nequi-db-bastion`, el usuario `nequi-tunnel` y su access key en el perfil local `nequi-tunnel`. Idempotente. `init.sh` ya lo llama. |
 | `scripts/start-tunnel.sh <env> [puerto]` | Cuando se necesite la base | Lanza una EC2 temporal, abre el túnel SSM a RDS y deja la terminal colgada. Ctrl+C termina la EC2. Ver [Acceso a la base de datos](#acceso-a-la-base-de-datos). |
-| `scripts/99-destroy-deployer.sh` | Al terminar el reto | Borra keys, usuario y grupo del deployer, y también el usuario `nequi-tunnel`, el rol y el instance profile. Antes, destruir los environments. |
+| `scripts/99-destroy-iam.sh` | Al terminar el reto | Con perfil admin (no `nequi-tf`). Borra keys, usuario, grupo y policy del deployer, y también el usuario y grupo `nequi-tunnel`, el rol y el instance profile. Antes, destruir los environments y el bootstrap. |
 
 `--yes` salta la confirmación interactiva de Terraform. Variables opcionales: `AWS_PROFILE` (por defecto `nequi-tf`), `REGION` (`us-east-1`) e `IMAGE_TAG` (`latest`, solo en `deploy.sh`).
 
@@ -206,7 +209,7 @@ En DBeaver: PostgreSQL, host `localhost`, puerto `15432`, la contraseña leída 
 
 **Riesgos:**
 - La EC2 está fuera del state de Terraform y su ENI vive en el SG y la subnet que Terraform administra. Por eso `destroy.sh` la termina antes de destruir. Si `start-tunnel.sh` muere sin limpiar (`kill -9`), volver a correrlo la barre al arrancar.
-- El rol `nequi-db-bastion` persiste entre corridas. Solo tiene SSM y no cuesta nada. Lo borra `99-destroy-deployer.sh`.
+- El rol `nequi-db-bastion` persiste entre corridas. Solo tiene SSM y no cuesta nada. Lo borra `99-destroy-iam.sh`.
 - El archivo de la contraseña vive en `/tmp` hasta que el script sale. Si muere con `SIGKILL` queda ahí (`0600`, y `/tmp` suele ser tmpfs: se borra al reiniciar).
 - Hay un perfil más en `~/.aws/credentials` (`nequi-tunnel`) y una access key más que cuidar.
 - En `prod` el túnel da acceso a la base real.
@@ -241,7 +244,7 @@ scripts/destroy.sh dev
 scripts/destroy.sh staging
 scripts/destroy.sh prod
 scripts/destroy.sh bootstrap        # se niega si algún environment aún tiene recursos
-scripts/99-destroy-deployer.sh      # opcional: borra el deployer, el usuario del túnel y el rol del bastion
+scripts/99-destroy-iam.sh      # opcional: borra el deployer, el usuario del túnel y el rol del bastion
 ```
 
 Después, revisar en la consola que no queden un NAT gateway, una Elastic IP o un ALB.

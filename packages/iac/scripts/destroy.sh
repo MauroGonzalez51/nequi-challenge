@@ -41,7 +41,8 @@ if [[ "$TARGET" == "bootstrap" ]]; then
   cd "$IAC_DIR/bootstrap"
   terraform init -input=false
   terraform destroy -input=false $AUTO_APPROVE
-  echo ">> Bootstrap destroyed. The deployer user stays (scripts/99-destroy-deployer.sh removes it)."
+  echo ">> Bootstrap destroyed. The IAM users (terraform-deployer, nequi-tunnel) and the bastion role still exist."
+  echo ">> To remove them, run with an ADMIN profile (not nequi-tf): AWS_PROFILE=<admin> scripts/99-destroy-iam.sh"
   exit 0
 fi
 
