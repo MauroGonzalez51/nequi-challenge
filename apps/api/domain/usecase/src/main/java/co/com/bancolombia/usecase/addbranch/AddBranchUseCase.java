@@ -15,25 +15,24 @@ public class AddBranchUseCase {
 
     /**
      * Creates a branch under an existing franchise.
-     * Checks run in order and the first failure ends the chain: blank name (400),
-     * null franchise id (400),
-     * franchise not found (404). Only then is the branch built and saved.
+     * Checks run in order and the first failure ends the chain: null or blank name
+     * (400), null franchise id (400), franchise not found (404). Only then is the
+     * branch built, with the trimmed name, and saved.
      */
     public Mono<Branch> execute(Long franchiseId, String name) {
+        // justOrEmpty (not just): a null name must become an empty Mono, so it ends in
+        // the ValidationException below instead of throwing a NullPointerException.
         return Mono.justOrEmpty(name)
                 .filter(value -> !value.isBlank())
                 .switchIfEmpty(Mono.error(() -> new ValidationException("Branch name must not be blank")))
-                // then() waits for the previous check to pass, drops its value and moves on to
-                // the next check;
-                // if the previous step errored, the error skips this step and goes straight
-                // out.
-                .then(
-                        Mono.justOrEmpty(franchiseId)
-                                .switchIfEmpty(
-                                        Mono.error(() -> new ValidationException("Franchise id cannot be null"))))
-                .flatMap(this.franchiseRepository::findById)
-                .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Franchise not found")))
-                .map(franchise -> Branch.builder().name(name.trim()).franchiseId(franchise.getId()).build())
-                .flatMap(this.branchRepository::save);
+                .map(String::trim)
+                // The inner chain lives inside flatMap so the trimmed name stays in scope
+                // and the later steps run only if the name check passed.
+                .flatMap(trimmed -> Mono.justOrEmpty(franchiseId)
+                        .switchIfEmpty(Mono.error(() -> new ValidationException("Franchise id cannot be null")))
+                        .flatMap(this.franchiseRepository::findById)
+                        .switchIfEmpty(Mono.error(() -> new RecordNotFoundException("Franchise not found")))
+                        .map(franchise -> Branch.builder().name(trimmed).franchiseId(franchise.getId()).build())
+                        .flatMap(this.branchRepository::save));
     }
 }
