@@ -23,7 +23,7 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 
 ## 4. Persistence and resilience
 
-- [ ] 4.1 Implement the persistence adapter with the chosen cloud store behind the domain ports; verified by an integration test and a successful run against the cloud store
+- [x] 4.1 Implement the persistence adapter with the chosen cloud store behind the domain ports; verified by an integration test and a successful run against the cloud store
 - [x] 4.2 Add Circuit Breaker, Timeout and Retry with backoff on persistence calls; verified by tests that trigger each pattern
 - [x] 4.3 Be able to explain backpressure for this API; verified by a verbal walkthrough reviewed by Claude
 
@@ -31,15 +31,15 @@ Candidate writes the code. Claude verifies each item against the named spec and 
 
 - [x] 5.1 Configure JaCoCo; verified by a generated report after `./gradlew test`
 - [x] 5.2 Document all endpoints with OpenAPI including examples; verified by opening Swagger UI and finding all nine endpoints with examples
-- [ ] 5.3 Write the README and verify it from a clean clone; verified by following only its steps successfully
+- [x] 5.3 Write the README and verify it from a clean clone; verified by following only its steps successfully
 
 ## 6. Docker and AWS
 
-- [ ] 6.1 Write a multi-stage, non-root Dockerfile; verified by building and running the container locally
-- [ ] 6.2 Create modular Terraform (network, ECR, ECS, ALB, IAM, secrets, autoscaling, database) with `variables.tf`, `outputs.tf` and S3 remote state; verified by `terraform validate` and `terraform plan`
+- [x] 6.1 Write a multi-stage, non-root Dockerfile; verified by building and running the container locally
+- [x] 6.2 Create modular Terraform (network, ECR, ECS, ALB, IAM, secrets, autoscaling, database) with `variables.tf`, `outputs.tf` and S3 remote state; verified by `terraform validate` and `terraform plan`
 - [ ] 6.3 Support dev, staging and prod through workspaces or parameterized modules; verified by a plan for two environments
-- [ ] 6.4 Store secrets in Secrets Manager and scope IAM to least privilege; verified by a scan showing no plaintext credentials or wildcard policies
-- [ ] 6.5 Push the image to ECR and deploy; verified by a successful request to the ALB URL
+- [x] 6.4 Store secrets in Secrets Manager and scope IAM to least privilege; verified by a scan showing no plaintext credentials or wildcard policies
+- [x] 6.5 Push the image to ECR and deploy; verified by a successful request to the ALB URL
 
 ## 7. Delivery readiness
 
