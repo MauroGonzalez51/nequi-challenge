@@ -12,7 +12,7 @@ These are in the original document and not yet verified. Each one can fail the d
 | # | Requirement in the document | Status | Action |
 |---|---|---|---|
 | B1 | "The application must be **deployed and reachable in the cloud** at the time of the defense" | `dev` was destroyed after testing | Deploy `dev` the evening before (`scripts/deploy.sh dev`, ~15 min). Run the smoke test in section 6. Destroy it after. |
-| B2 | "Unit tests **and integration** where it makes sense" | Only unit and `WebTestClient` handler tests. No test against a real database. | Decide: add one integration test (e.g. Testcontainers) or be ready to explain the gap. |
+| B2 | "Unit tests **and integration** where it makes sense" | Unit and `WebTestClient` handler tests, plus one Testcontainers integration test (`UniqueNameIntegrationTest`: save and read, duplicate name gives `DataConflictException`). Still no run against the cloud store (`tasks.md` 4.1). | Be ready to explain the test line by line, and cover the gap that branch and product indexes have no automated test. |
 | B3 | README must let anyone run the project from scratch, "verified by the candidate" | Written, never followed from a clean clone | Clone to a temp folder and follow it literally. |
 | B4 | Public repo, clean commit history with real progress | Several changes still uncommitted | Review `git status` and the commit messages before the day. |
 | B5 | Disqualification checks (`@RestController`, `.block(`, `java.util.stream`, `try`/`catch` and `if` in reactive flows, `javax.`, MVC mixed with WebFlux) | Checked per task, not as a final sweep | Run the grep sweep from `CLAUDE.md` once more on the final commit. |
@@ -60,7 +60,7 @@ Topics come straight from the document's "Topics to study" list. The last two co
 | Topic | What gets probed | In our code | Known weak spot |
 |---|---|---|---|
 | `StepVerifier` | Why never `.block()` | Used across modules | Be ready to explain `verifyComplete` vs `expectNext` |
-| Unit vs integration | The real difference | Unit tests plus `WebTestClient` handler tests | **No test with a real database (B2).** |
+| Unit vs integration | The real difference | Unit tests plus `WebTestClient` handler tests | One integration test with a real database (B2); branch and product indexes are not covered. |
 | JaCoCo | What the number means | Reports per module | Coverage is not the same as meaningful tests |
 | Mutation testing | Arcmutate runs in the build | Mutants killed rate shown at build time | Optional, but it shows test strength |
 
@@ -155,4 +155,5 @@ Load only `docs/sparring/next-round.md` when starting a round. Older sessions ar
 - `docs/sparring/session-1.md`: resilience order, `switchIfEmpty`, `concatMap`, layers, Terraform state, Lombok, testing tools.
 - `docs/sparring/session-2.md`: `zip` vs `merge`, multi-stage Docker, IAM roles, Auto Scaling, SOLID, sealed classes.
 - `docs/sparring/session-3.md`: `Mono.error` lazy, `flatMapSequential` vs pool, `transformDeferred`, `DataConflictException` (409), IAM `*`, multi-stage Docker.
+- `docs/sparring/session-4.md`: `PersistenceResilience` order and writes, worst-case read latency, breaker numbers, resilience tests, `readMany` buffer, `concat` vs `zip`.
 - `docs/sparring/session-5.md`: top-stock and N+1, network path, `StepVerifier`, auth, cold publisher, `@Data`, rollback, integration tests, unique names, blocking in WebFlux.
